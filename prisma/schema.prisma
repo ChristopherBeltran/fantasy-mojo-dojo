@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// One row per Sleeper league you connect. Supports multiple seasons/leagues later.
+model League {
+  id              String     @id @default(cuid())
+  sleeperLeagueId String     @unique
+  name            String
+  season          String
+  totalRosters    Int
+  settingsJson    Json // raw sleeper league settings, kept for reference
+  managers        Manager[]
+  matchups        Matchup[]
+  bonuses         Bonus[]
+  lastSyncedAt    DateTime?
+  createdAt       DateTime   @default(now())
+}
+
+// One row per team/owner in the league
+model Manager {
+  id              String    @id @default(cuid())
+  league          League    @relation(fields: [leagueId], references: [id])
+  leagueId        String
+  sleeperUserId   String
+  rosterId        Int
+  displayName     String
+  teamName        String?
+  avatarUrl       String?
+  matchupsAsHome  Matchup[] @relation("HomeManager")
+  matchupsAsAway  Matchup[] @relation("AwayManager")
+
+  @@unique([leagueId, rosterId])
+}
+
+// One row per team, per week. This is the table almost every bonus computes over.
+model Matchup {
+  id               String   @id @default(cuid())
+  league           League   @relation(fields: [leagueId], references: [id])
+  leagueId         String
+  week             Int
+  season           String
+  isPlayoff        Boolean  @default(false)
+
+  manager          Manager  @relation("HomeManager", fields: [managerId], references: [id])
+  managerId        String
+  points           Float
+
+  opponent         Manager? @relation("AwayManager", fields: [opponentId], references: [id])
+  opponentId       String?
+  opponentPoints   Float?
+
+  createdAt        DateTime @default(now())
+
+  @@unique([leagueId, week, managerId])
+  @@index([leagueId, week])
+}
+
+// A bonus/award definition. dslJson is the AI-generated computation spec —
+// see src/lib/bonusInterpreter.ts for how it's executed.
+model Bonus {
+  id          String        @id @default(cuid())
+  league      League        @relation(fields: [leagueId], references: [id])
+  leagueId    String
+  promptText  String // the original natural-language prompt from the commissioner
+  label       String // display name, e.g. "Highest Regular Season Points"
+  dslJson     Json // validated DSL spec (see BonusSpecSchema in src/lib/bonusSchema.ts)
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  results     BonusResult[]
+}
+
+// One row per computation run. Keeping history lets you show "leader changed on week 8" etc.
+model BonusResult {
+  id           String   @id @default(cuid())
+  bonus        Bonus    @relation(fields: [bonusId], references: [id])
+  bonusId      String
+  computedAt   DateTime @default(now())
+  leaderboard  Json // ranked array: [{ managerId, displayName, value }, ...]
+
+  @@index([bonusId, computedAt])
+}

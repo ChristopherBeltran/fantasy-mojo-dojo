@@ -1,0 +1,57 @@
+interface LeaderboardEntry {
+  managerId: string;
+  displayName: string;
+  value: number;
+}
+
+interface BonusCardProps {
+  label: string;
+  computedAt: string; // ISO date string
+  leaderboard: LeaderboardEntry[];
+  valueFormatter?: (value: number) => string;
+}
+
+const defaultFormatter = (value: number) => value.toFixed(1);
+
+export function BonusCard({ label, computedAt, leaderboard, valueFormatter = defaultFormatter }: BonusCardProps) {
+  const computedDate = new Date(computedAt);
+
+  return (
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <div>
+          <p className="text-[10px] font-semibold tracking-widest text-faint uppercase mb-1">Bonus</p>
+          <h2 className="font-bold text-lg">{label}</h2>
+        </div>
+        <span className="px-2.5 py-1 rounded-full border border-brandGreen/30 bg-brandGreen/10 text-brandGreen text-[10px] font-bold uppercase">
+          Live
+        </span>
+      </div>
+
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-faint text-[11px] uppercase tracking-wide">
+            <th className="px-5 py-2 font-semibold">Rank</th>
+            <th className="px-5 py-2 font-semibold">Team</th>
+            <th className="px-5 py-2 font-semibold text-right">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {leaderboard.map((entry, i) => (
+            <tr key={entry.managerId} className={`border-t border-border ${i === 0 ? "bg-brandGreen/5" : ""}`}>
+              <td className={`px-5 py-3 font-bold ${i === 0 ? "text-brandGreen" : "text-muted"}`}>{i + 1}</td>
+              <td className={`px-5 py-3 ${i === 0 ? "font-semibold" : ""}`}>{entry.displayName}</td>
+              <td className={`px-5 py-3 text-right tabular ${i === 0 ? "font-bold text-brandGreen" : "text-slate-300"}`}>
+                {valueFormatter(entry.value)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div className="px-5 py-3 border-t border-border text-[11px] text-faint">
+        Last computed {computedDate.toLocaleString()} · Recomputes daily after games are played
+      </div>
+    </div>
+  );
+}
