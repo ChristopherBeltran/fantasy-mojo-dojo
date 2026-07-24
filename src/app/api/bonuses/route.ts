@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { generateBonusSpec, BonusSpecGenerationError } from "@/lib/claude";
-import { computeAndSaveBonusResult } from "./[id]/compute/route";
+import { computeAndSaveBonusResult } from "@/lib/bonusCompute";
 
 /**
  * Creates a new bonus from a natural-language prompt.
@@ -39,6 +40,10 @@ export async function POST(req: Request) {
   // Compute an initial leaderboard immediately so the UI isn't empty
   // until the next cron run.
   await computeAndSaveBonusResult(bonus.id);
+
+  // Home is time-based (revalidate = 300) cached; bust it now so the new
+  // bonus shows up immediately instead of after the next scheduled refresh.
+  revalidatePath("/");
 
   return NextResponse.json({ bonus }, { status: 201 });
 }

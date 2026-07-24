@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { BonusCard } from "@/components/BonusCard";
+import { AddBonusModal } from "@/components/AddBonusModal";
 import { PageShell } from "@/components/PageShell";
 import { getCurrentLeague } from "@/lib/league";
 
@@ -16,7 +17,10 @@ export default async function HomePage() {
 
   return (
     <PageShell activeTab="home" leagueName={league.name}>
-      <h1 className="text-2xl font-extrabold tracking-tight mb-2">Season Bonuses</h1>
+      <div className="flex items-center justify-between gap-4 mb-2">
+        <h1 className="text-2xl font-extrabold tracking-tight">Season Bonuses</h1>
+        <AddBonusModal leagueId={league.id} />
+      </div>
 
       {bonuses.length === 0 && (
         <div className="bg-card border border-border rounded-xl p-10 text-center">

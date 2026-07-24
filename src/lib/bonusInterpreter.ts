@@ -17,7 +17,7 @@ export interface LeaderboardEntry {
   managerId: string;
   displayName: string;
   value: number;
-  week?: number; // present for per-game bonuses, useful for display
+  week: number | null; // set for per-game bonuses, null for season-long, useful for display
 }
 
 function passesFilter(row: MatchupRow, filter: BonusSpec["filters"][number]): boolean {
@@ -108,7 +108,7 @@ export function runBonusSpec(spec: BonusSpec, rows: MatchupRow[]): LeaderboardEn
         value = group.values.reduce((a, b) => a + b, 0) / group.values.length;
         break;
     }
-    return { managerId, displayName: group.displayName, value };
+    return { managerId, displayName: group.displayName, value, week: null };
   });
 
   entries.sort((a, b) => (spec.rank === "max" ? b.value - a.value : a.value - b.value));

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { syncLeague } from "@/app/api/sleeper/sync/route";
-import { computeAndSaveBonusResult } from "@/app/api/bonuses/[id]/compute/route";
+import { computeAndSaveBonusResult } from "@/lib/bonusCompute";
 
 /**
  * Daily job (see vercel.json for schedule):

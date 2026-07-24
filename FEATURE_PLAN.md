@@ -26,10 +26,10 @@ move on until you can see it working locally.
 - [x] Wire up the Sidebar/TopNav components from the design system mockup as real Next.js components (`src/components/Sidebar.tsx`, `TopNav.tsx`) — trimmed to the pages that actually exist (Home, Standings, Matchups); the mockup's Media/Draft/Mini-Games/Wrapped/Research/Stats/multi-league nav wasn't ported since none of it is in this plan
 
 ## Phase 3 — Bonus creation flow
-- [ ] Build a simple form/modal: text input for the prompt, POST to `/api/bonuses`
-- [ ] Wire up loading/error states — `generateBonusSpec` can fail (422) if Claude's output doesn't validate; show the error and let the commissioner retry with clearer wording
-- [ ] After creation, redirect to a page showing the new bonus's first computed leaderboard
-- [ ] **Test with your actual planned bonuses** — "highest regular season points," "highest single-game points," "biggest blowout" — and inspect the generated `dslJson` in Prisma Studio to sanity-check it before trusting it
+- [x] Build a simple form/modal: text input for the prompt, POST to `/api/bonuses` (`AddBonusModal`, triggered from Home — visible to all, but the POST itself requires the commissioner Basic Auth from the earlier gate)
+- [x] Wire up loading/error states — `generateBonusSpec` can fail (422) if Claude's output doesn't validate; show the error and let the commissioner retry with clearer wording
+- [x] After creation, redirect to a page showing the new bonus's first computed leaderboard (`/bonuses/[id]`)
+- [ ] **Test with your actual planned bonuses** — "highest regular season points," "highest single-game points," "biggest blowout" — and inspect the generated `dslJson` in Prisma Studio to sanity-check it before trusting it (needs a real `ANTHROPIC_API_KEY`, which isn't set locally yet — verified the rest of the pipeline by inserting a bonus directly and computing/rendering its leaderboard)
 
 ## Phase 4 — Bonus DSL coverage
 The starter schema in `bonusSchema.ts` covers points/margin-based bonuses.
