@@ -8,15 +8,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        app: "#05070d",
-        sidebar: "#0a0e17",
-        card: "#0d1420",
-        cardHover: "#131b2c",
-        border: "#1e2937",
-        muted: "#7c8798",
-        faint: "#4b5563",
-        brandGreen: "#22c55e",
-        brandIndigo: "#6366f1",
+        app: "#071312",
+        sidebar: "#0a1918",
+        card: "#0e211f",
+        cardHover: "#142e2b",
+        border: "#1f3d39",
+        muted: "#7fa39d",
+        faint: "#4a6b66",
+        brandTeal: "#14b8a6",
         brandGold: "#d4a656",
       },
       fontFamily: {

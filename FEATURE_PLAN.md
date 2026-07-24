@@ -9,21 +9,21 @@ move on until you can see it working locally.
 - [x] Create a free Postgres instance (Supabase or Neon)
 - [x] `npm install`
 - [x] Fill in `.env` from `.env.example`
-- [ ] `npx prisma migrate dev --name init`
-- [ ] Confirm `npx prisma studio` opens and shows empty tables
+- [x] `npx prisma migrate dev --name init`
+- [x] Confirm `npx prisma studio` opens and shows empty tables
 
 ## Phase 1 — Sleeper sync
-- [ ] Find your league ID (in the Sleeper app: League → Settings, or the URL)
-- [ ] Run `npm run sync` and confirm rows appear in `League`, `Manager`, `Matchup` via Prisma Studio
-- [ ] Sanity-check a couple of matchup rows against the Sleeper app — points and opponent should match
-- [ ] Handle the "season hasn't started" case gracefully (sync should no-op, not crash)
-- [ ] Decide how you want `teamName` populated — Sleeper's user API gives `display_name` (Sleeper username) but not always a custom team name; you may need `/league/{id}/rosters` metadata or just default to display name for now
+- [x] Find your league ID (in the Sleeper app: League → Settings, or the URL)
+- [x] Run `npm run sync` and confirm rows appear in `League`, `Manager`, `Matchup` via Prisma Studio
+- [x] Sanity-check a couple of matchup rows against the Sleeper app — points and opponent should match
+- [x] Handle the "season hasn't started" case gracefully (sync should no-op, not crash)
+- [x] Decide how you want `teamName` populated — pulled from `metadata.team_name` on the users endpoint, falling back to `null` (UI falls back to `displayName`) when a manager hasn't set a custom team name
 
 ## Phase 2 — Basic pages (no bonuses yet)
-- [ ] Standings page: query `Matchup` grouped by manager, sum points, compute wins/losses from points comparisons, sort by record
-- [ ] Team page: one manager's week-by-week scores
-- [ ] Matchups page: this week's head-to-head pairings
-- [ ] Wire up the Sidebar/TopNav components from the design system mockup as real Next.js components (`src/components/Sidebar.tsx`, `TopNav.tsx`) — pull them out of the static HTML and make them accept `activeTab` props
+- [x] Standings page: query `Matchup` grouped by manager, sum points, compute wins/losses from points comparisons, sort by record (regular season only; `/standings`)
+- [x] Team page: one manager's week-by-week scores (`/team/[managerId]`)
+- [x] Matchups page: this week's head-to-head pairings (`/matchups`)
+- [x] Wire up the Sidebar/TopNav components from the design system mockup as real Next.js components (`src/components/Sidebar.tsx`, `TopNav.tsx`) — trimmed to the pages that actually exist (Home, Standings, Matchups); the mockup's Media/Draft/Mini-Games/Wrapped/Research/Stats/multi-league nav wasn't ported since none of it is in this plan
 
 ## Phase 3 — Bonus creation flow
 - [ ] Build a simple form/modal: text input for the prompt, POST to `/api/bonuses`

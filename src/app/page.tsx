@@ -1,18 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import { BonusCard } from "@/components/BonusCard";
+import { PageShell } from "@/components/PageShell";
+import { getCurrentLeague } from "@/lib/league";
 
 // Revalidate periodically so a manual refresh isn't required, but this is
 // still just reading pre-computed rows — no Sleeper/Claude calls on load.
 export const revalidate = 300;
 
 export default async function HomePage() {
+  const league = await getCurrentLeague();
   const bonuses = await prisma.bonus.findMany({
-    where: { active: true },
+    where: { leagueId: league.id, active: true },
     include: { results: { orderBy: { computedAt: "desc" }, take: 1 } },
   });
 
   return (
-    <main className="max-w-5xl mx-auto p-6 space-y-5">
+    <PageShell activeTab="home" leagueName={league.name}>
       <h1 className="text-2xl font-extrabold tracking-tight mb-2">Season Bonuses</h1>
 
       {bonuses.length === 0 && (
@@ -36,6 +39,6 @@ export default async function HomePage() {
           />
         );
       })}
-    </main>
+    </PageShell>
   );
 }

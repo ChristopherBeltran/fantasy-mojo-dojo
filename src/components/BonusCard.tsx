@@ -23,7 +23,7 @@ export function BonusCard({ label, computedAt, leaderboard, valueFormatter = def
           <p className="text-[10px] font-semibold tracking-widest text-faint uppercase mb-1">Bonus</p>
           <h2 className="font-bold text-lg">{label}</h2>
         </div>
-        <span className="px-2.5 py-1 rounded-full border border-brandGreen/30 bg-brandGreen/10 text-brandGreen text-[10px] font-bold uppercase">
+        <span className="px-2.5 py-1 rounded-full border border-brandTeal/30 bg-brandTeal/10 text-brandTeal text-[10px] font-bold uppercase">
           Live
         </span>
       </div>
@@ -38,10 +38,10 @@ export function BonusCard({ label, computedAt, leaderboard, valueFormatter = def
         </thead>
         <tbody>
           {leaderboard.map((entry, i) => (
-            <tr key={entry.managerId} className={`border-t border-border ${i === 0 ? "bg-brandGreen/5" : ""}`}>
-              <td className={`px-5 py-3 font-bold ${i === 0 ? "text-brandGreen" : "text-muted"}`}>{i + 1}</td>
+            <tr key={entry.managerId} className={`border-t border-border ${i === 0 ? "bg-brandTeal/5" : ""}`}>
+              <td className={`px-5 py-3 font-bold ${i === 0 ? "text-brandTeal" : "text-muted"}`}>{i + 1}</td>
               <td className={`px-5 py-3 ${i === 0 ? "font-semibold" : ""}`}>{entry.displayName}</td>
-              <td className={`px-5 py-3 text-right tabular ${i === 0 ? "font-bold text-brandGreen" : "text-slate-300"}`}>
+              <td className={`px-5 py-3 text-right tabular ${i === 0 ? "font-bold text-brandTeal" : "text-slate-300"}`}>
                 {valueFormatter(entry.value)}
               </td>
             </tr>
