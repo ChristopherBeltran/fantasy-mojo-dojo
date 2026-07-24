@@ -49,6 +49,7 @@ export async function syncLeague(sleeperLeagueId: string) {
       where: { leagueId_rosterId: { leagueId: league.id, rosterId: roster.roster_id } },
       update: {
         displayName: user?.display_name ?? `Roster ${roster.roster_id}`,
+        teamName: user?.metadata?.team_name || null,
         avatarUrl: user?.avatar ?? null,
       },
       create: {
@@ -56,6 +57,7 @@ export async function syncLeague(sleeperLeagueId: string) {
         sleeperUserId: roster.owner_id,
         rosterId: roster.roster_id,
         displayName: user?.display_name ?? `Roster ${roster.roster_id}`,
+        teamName: user?.metadata?.team_name || null,
         avatarUrl: user?.avatar ?? null,
       },
     });

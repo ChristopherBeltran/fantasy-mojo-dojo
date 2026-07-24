@@ -18,6 +18,10 @@ export interface SleeperUser {
   user_id: string;
   display_name: string;
   avatar: string | null;
+  username: string;
+  metadata?: {
+    team_name?: string | null;
+  };
 }
 
 export interface SleeperRoster {
