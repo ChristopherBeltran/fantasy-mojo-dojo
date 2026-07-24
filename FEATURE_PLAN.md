@@ -6,9 +6,9 @@ move on until you can see it working locally.
 ---
 
 ## Phase 0 — Environment setup
-- [ ] Create a free Postgres instance (Supabase or Neon)
-- [ ] `npm install`
-- [ ] Fill in `.env` from `.env.example`
+- [x] Create a free Postgres instance (Supabase or Neon)
+- [x] `npm install`
+- [x] Fill in `.env` from `.env.example`
 - [ ] `npx prisma migrate dev --name init`
 - [ ] Confirm `npx prisma studio` opens and shows empty tables
 
