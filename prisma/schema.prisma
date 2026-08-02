@@ -35,6 +35,8 @@ model Manager {
   avatarUrl       String?
   // Commissioner-uploaded reference photo, used to generate weekly matchup posters.
   photoUrl        String?
+  // Commissioner-set real-world NFL team, matched against NFL_TEAMS in src/lib/nflTeams.ts.
+  favoriteNflTeam String?
   matchupsAsHome  Matchup[] @relation("HomeManager")
   matchupsAsAway  Matchup[] @relation("AwayManager")
   postersAsA      MatchupPoster[] @relation("PosterManagerA")
