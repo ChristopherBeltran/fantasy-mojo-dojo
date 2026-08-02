@@ -2,7 +2,7 @@
  * Run with: npm run sync
  * Useful for testing the Sleeper sync locally without deploying the cron.
  */
-import { syncLeague } from "../src/app/api/sleeper/sync/route";
+import { syncLeague } from "../src/lib/sleeperSync";
 
 async function main() {
   const leagueId = process.env.SLEEPER_LEAGUE_ID;

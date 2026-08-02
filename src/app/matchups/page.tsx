@@ -1,33 +1,20 @@
-import { prisma } from "@/lib/prisma";
 import { PageShell } from "@/components/PageShell";
 import { getCurrentLeague } from "@/lib/league";
+import { getCurrentWeek, getWeekPairs } from "@/lib/currentWeek";
+import { prisma } from "@/lib/prisma";
 
 export const revalidate = 300;
 
 export default async function MatchupsPage() {
   const league = await getCurrentLeague();
 
-  const latest = await prisma.matchup.aggregate({
-    where: { leagueId: league.id },
-    _max: { week: true },
-  });
-  const week = latest._max.week;
+  const week = await getCurrentWeek(league.id);
+  const pairs = week ? await getWeekPairs(league.id, week) : [];
 
-  const rows = week
-    ? await prisma.matchup.findMany({
-        where: { leagueId: league.id, week },
-        include: { manager: true, opponent: true },
-      })
+  const posters = week
+    ? await prisma.matchupPoster.findMany({ where: { leagueId: league.id, week } })
     : [];
-
-  const seenPairs = new Set<string>();
-  const pairs = rows.filter((m) => {
-    if (!m.opponentId || !m.opponent) return false; // bye week
-    const key = [m.managerId, m.opponentId].sort().join(":");
-    if (seenPairs.has(key)) return false;
-    seenPairs.add(key);
-    return true;
-  });
+  const posterByPair = new Map(posters.map((p) => [`${p.managerAId}:${p.managerBId}`, p]));
 
   return (
     <PageShell activeTab="matchups" leagueName={league.name}>
@@ -45,25 +32,32 @@ export default async function MatchupsPage() {
             const homeName = m.manager.teamName ?? m.manager.displayName;
             const awayName = m.opponent!.teamName ?? m.opponent!.displayName;
             const homeWinning = m.points > (m.opponentPoints ?? 0);
+            const pairKey = [m.managerId, m.opponentId].sort().join(":");
+            const poster = posterByPair.get(pairKey);
             return (
-              <div
-                key={m.id}
-                className="bg-card border border-border rounded-xl px-5 py-4 flex items-center justify-between gap-4"
-              >
-                <div className={`flex-1 min-w-0 truncate ${homeWinning ? "font-semibold text-slate-100" : "text-slate-300"}`}>
-                  {homeName}
-                </div>
-                <div className="flex items-center gap-3 tabular font-bold shrink-0">
-                  <span className={homeWinning ? "text-brandTeal" : "text-slate-300"}>{m.points.toFixed(1)}</span>
-                  <span className="text-faint text-xs">–</span>
-                  <span className={!homeWinning ? "text-brandTeal" : "text-slate-300"}>
-                    {(m.opponentPoints ?? 0).toFixed(1)}
-                  </span>
-                </div>
-                <div
-                  className={`flex-1 min-w-0 truncate text-right ${!homeWinning ? "font-semibold text-slate-100" : "text-slate-300"}`}
-                >
-                  {awayName}
+              <div key={m.id} className="bg-card border border-border rounded-xl overflow-hidden">
+                {poster && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={poster.imageUrl} alt={`${homeName} vs ${awayName} matchup poster`} className="w-full" />
+                )}
+                <div className="px-5 py-4 flex items-center justify-between gap-4">
+                  <div
+                    className={`flex-1 min-w-0 truncate ${homeWinning ? "font-semibold text-slate-100" : "text-slate-300"}`}
+                  >
+                    {homeName}
+                  </div>
+                  <div className="flex items-center gap-3 tabular font-bold shrink-0">
+                    <span className={homeWinning ? "text-brandTeal" : "text-slate-300"}>{m.points.toFixed(1)}</span>
+                    <span className="text-faint text-xs">–</span>
+                    <span className={!homeWinning ? "text-brandTeal" : "text-slate-300"}>
+                      {(m.opponentPoints ?? 0).toFixed(1)}
+                    </span>
+                  </div>
+                  <div
+                    className={`flex-1 min-w-0 truncate text-right ${!homeWinning ? "font-semibold text-slate-100" : "text-slate-300"}`}
+                  >
+                    {awayName}
+                  </div>
                 </div>
               </div>
             );

@@ -1,8 +1,8 @@
 import type { ActiveTab } from "@/lib/nav";
-import { NAV_ITEMS } from "@/lib/nav";
+import { TAB_LABELS } from "@/lib/nav";
 
 export function TopNav({ leagueName, activeTab }: { leagueName: string; activeTab: ActiveTab }) {
-  const activeLabel = NAV_ITEMS.find((item) => item.tab === activeTab)?.label ?? "";
+  const activeLabel = TAB_LABELS[activeTab];
 
   return (
     <div className="border-b border-border bg-sidebar">

@@ -18,6 +18,7 @@ model League {
   managers        Manager[]
   matchups        Matchup[]
   bonuses         Bonus[]
+  posters         MatchupPoster[]
   lastSyncedAt    DateTime?
   createdAt       DateTime   @default(now())
 }
@@ -32,8 +33,12 @@ model Manager {
   displayName     String
   teamName        String?
   avatarUrl       String?
+  // Commissioner-uploaded reference photo, used to generate weekly matchup posters.
+  photoUrl        String?
   matchupsAsHome  Matchup[] @relation("HomeManager")
   matchupsAsAway  Matchup[] @relation("AwayManager")
+  postersAsA      MatchupPoster[] @relation("PosterManagerA")
+  postersAsB      MatchupPoster[] @relation("PosterManagerB")
 
   @@unique([leagueId, rosterId])
 }
@@ -84,4 +89,26 @@ model BonusResult {
   leaderboard  Json // ranked array: [{ managerId, displayName, value }, ...]
 
   @@index([bonusId, computedAt])
+}
+
+// One AI-generated poster per head-to-head pairing, per week. managerAId/
+// managerBId are stored in sorted order (see posterGen.ts) so each pairing
+// has exactly one canonical row regardless of who's "home"/"away" that week.
+// Generation is triggered by the daily cron once it sees a week's pairing
+// that doesn't have a poster yet — see generateWeeklyPosters in posterGen.ts.
+model MatchupPoster {
+  id         String   @id @default(cuid())
+  league     League   @relation(fields: [leagueId], references: [id])
+  leagueId   String
+  week       Int
+  season     String
+  managerA   Manager  @relation("PosterManagerA", fields: [managerAId], references: [id])
+  managerAId String
+  managerB   Manager  @relation("PosterManagerB", fields: [managerBId], references: [id])
+  managerBId String
+  imageUrl   String
+  createdAt  DateTime @default(now())
+
+  @@unique([leagueId, week, managerAId, managerBId])
+  @@index([leagueId, week])
 }

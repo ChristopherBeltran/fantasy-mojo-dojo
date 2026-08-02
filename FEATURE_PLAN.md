@@ -33,11 +33,11 @@ move on until you can see it working locally.
 
 ## Phase 4 — Bonus DSL coverage
 The starter schema in `bonusSchema.ts` covers points/margin-based bonuses.
-Expand it as you think of new bonus ideas. Some you'll likely want soon:
-- [ ] "Best single-week margin over projection" — needs a `projectedPoints` field; Sleeper doesn't expose this directly, so this may require a third-party projections source or skipping it
-- [ ] "Most points scored by a losing team" — needs a filter for `points < opponentPoints` combined with max(points); may need a new filter field
-- [ ] "Longest winning streak" — needs sequential logic across weeks, which the current groupBy/aggregate shape doesn't support; this one may need a dedicated interpreter branch rather than the generic DSL
-- [ ] Add new `field` enum values and filter fields to `bonusSchema.ts` as needed, and extend `bonusInterpreter.ts` to match — keep the interpreter's logic simple and auditable rather than trying to make the DSL fully general-purpose
+Expand it as you think of new bonus ideas.
+- ~~"Best single-week margin over projection"~~ — not tracking this one
+- ~~"Most points scored by a losing team"~~ — not tracking this one
+- ~~"Longest winning streak"~~ — not tracking this one
+- [ ] Add new `field` enum values and filter fields to `bonusSchema.ts` as needed, and extend `bonusInterpreter.ts` to match, once there's an actual bonus idea that needs them — keep the interpreter's logic simple and auditable rather than trying to make the DSL fully general-purpose
 
 ## Phase 5 — Cron + deployment
 - [ ] Deploy to Vercel, set all env vars there
@@ -51,6 +51,19 @@ Expand it as you think of new bonus ideas. Some you'll likely want soon:
 - [ ] Avatar images: Sleeper's user API returns an avatar ID — build the image URL as `https://sleepercdn.com/avatars/{avatar_id}`
 - [ ] Mobile responsiveness pass on the design system components
 - [ ] Auth: if you want to let league members log in and toggle bonuses themselves rather than editing via API calls directly, add a lightweight auth layer (NextAuth) — likely lower priority for a private league tool
+
+## Phase 7 — AI matchup posters
+Commissioner-only feature: generate a stylized "matchup poster" per head-to-head
+pairing each week, using a reference photo uploaded for each manager.
+- [x] `Manager.photoUrl` + `MatchupPoster` schema (canonical `managerAId < managerBId` pair per league/week)
+- [x] `/admin/photos` — commissioner-only page (gated on every method, not just writes) to upload/replace each manager's reference photo
+- [x] `src/lib/posterGen.ts` — calls Gemini 2.5 Flash Image with both reference photos, stylized/cartoon prompt (not photorealistic — more forgiving of imperfect likeness, less content-policy friction than a photoreal composite), uploads the result to Vercel Blob
+- [x] Wired into the daily cron, after sync + bonus recompute — idempotent (skips pairs that already have a poster or are missing a reference photo), which is what makes "run once the new week begins" work: the first cron run after a new week appears is the only one that actually generates anything for it
+- [x] Posters display above each pairing on `/matchups`
+- [ ] **Set `GEMINI_API_KEY`** (from [Google AI Studio](https://aistudio.google.com/apikey)) **and `BLOB_READ_WRITE_TOKEN`** (create a Blob store in the Vercel dashboard, or `vercel env pull` once one's linked) and smoke-test real generation — the Gemini SDK call is implemented against the installed `@google/genai` package's actual shipped type definitions (verified directly, not just docs), but hasn't been exercised against a live API call yet
+- [ ] Upload reference photos for each manager in `/admin/photos` — posters only generate for pairs where both managers have one
+- [ ] Once real output comes back, revisit the poster prompt in `posterGen.ts` — wording will likely need iteration to get a style/composition you're happy with
+- [ ] Set both env vars in Vercel too before relying on this in production (fold into Phase 5's env var setup)
 
 ---
 

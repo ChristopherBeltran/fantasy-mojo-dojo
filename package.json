@@ -1,5 +1,5 @@
 {
-  "name": "league-hub",
+  "name": "fantasy-mojo-dojo",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -14,9 +14,11 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.0",
+    "@google/genai": "^2.15.0",
     "@neondatabase/serverless": "^1.1.0",
     "@prisma/adapter-neon": "^7.9.0",
     "@prisma/client": "^5.20.0",
+    "@vercel/blob": "^2.6.1",
     "next": "14.2.15",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
