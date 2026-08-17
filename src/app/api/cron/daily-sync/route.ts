@@ -24,7 +24,10 @@ export async function GET(req: Request) {
 
   const leagueId = process.env.SLEEPER_LEAGUE_ID;
   if (!leagueId) {
-    return NextResponse.json({ error: "SLEEPER_LEAGUE_ID not set" }, { status: 500 });
+    return NextResponse.json(
+      { error: "SLEEPER_LEAGUE_ID not set" },
+      { status: 500 },
+    );
   }
 
   const { league } = await syncLeague(leagueId);
@@ -52,5 +55,9 @@ export async function GET(req: Request) {
     posterResult = { error: "Poster generation failed" };
   }
 
-  return NextResponse.json({ synced: true, bonusesComputed: results, posters: posterResult });
+  return NextResponse.json({
+    synced: true,
+    bonusesComputed: results,
+    posters: posterResult,
+  });
 }

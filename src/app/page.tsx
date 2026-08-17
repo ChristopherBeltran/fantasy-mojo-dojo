@@ -18,7 +18,9 @@ export default async function HomePage() {
   return (
     <PageShell activeTab="home" leagueName={league.name}>
       <div className="flex items-center justify-between gap-4 mb-2">
-        <h1 className="text-2xl font-extrabold tracking-tight">Season Bonuses</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">
+          Season Bonuses
+        </h1>
         <AddBonusModal leagueId={league.id} />
       </div>
 
@@ -26,7 +28,8 @@ export default async function HomePage() {
         <div className="bg-card border border-border rounded-xl p-10 text-center">
           <h3 className="font-bold text-lg mb-1.5">No bonuses added yet</h3>
           <p className="text-sm text-muted">
-            Describe an award in plain English and we&apos;ll figure out how to track the leaders automatically.
+            Describe an award in plain English and we&apos;ll figure out how to
+            track the leaders automatically.
           </p>
         </div>
       )}
@@ -37,6 +40,7 @@ export default async function HomePage() {
         return (
           <BonusCard
             key={bonus.id}
+            bonusId={bonus.id}
             label={bonus.label}
             computedAt={latest.computedAt.toISOString()}
             leaderboard={latest.leaderboard as never}
