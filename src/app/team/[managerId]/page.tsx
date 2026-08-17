@@ -27,6 +27,12 @@ export default async function TeamPage({ params }: { params: { managerId: string
       <h1 className="text-2xl font-extrabold tracking-tight mb-1">{name}</h1>
       <p className="text-sm text-muted mb-5">
         {wins}-{losses} · {manager.displayName}
+        {manager.favoriteNflTeam && (
+          <>
+            {" "}
+            · <span className="text-slate-300">Fan of the {manager.favoriteNflTeam}</span>
+          </>
+        )}
       </p>
 
       <div className="bg-card border border-border rounded-xl overflow-hidden">
