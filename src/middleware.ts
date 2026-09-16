@@ -22,13 +22,16 @@ function challenge() {
 }
 
 export function middleware(req: NextRequest) {
-  const isCommissionerSurface = req.nextUrl.pathname.startsWith("/commissioner");
+  const isCommissionerSurface =
+    req.nextUrl.pathname.startsWith("/commissioner");
 
   if (!isCommissionerSurface && !PROTECTED_METHODS.has(req.method)) {
     return NextResponse.next();
   }
 
-  return isCommissionerAuthorized(req.headers) ? NextResponse.next() : challenge();
+  return isCommissionerAuthorized(req.headers)
+    ? NextResponse.next()
+    : challenge();
 }
 
 export const config = {
@@ -37,6 +40,7 @@ export const config = {
     "/api/bonuses/:path*",
     "/api/managers/:path*",
     "/api/last-man-standing/:path*",
+    "/api/posters/:path*",
     "/commissioner",
     "/commissioner/:path*",
   ],
