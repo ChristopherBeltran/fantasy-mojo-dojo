@@ -1,13 +1,24 @@
 import { NextResponse } from "next/server";
-import { put, del } from "@vercel/blob";
+import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_PHOTOS_PER_MANAGER = 3;
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const manager = await prisma.manager.findUnique({ where: { id: params.id } });
+  const manager = await prisma.manager.findUnique({
+    where: { id: params.id },
+    include: { photos: true },
+  });
   if (!manager) {
     return NextResponse.json({ error: "Manager not found" }, { status: 404 });
+  }
+
+  if (manager.photos.length >= MAX_PHOTOS_PER_MANAGER) {
+    return NextResponse.json(
+      { error: `Manager already has ${MAX_PHOTOS_PER_MANAGER} photos — delete one first.` },
+      { status: 400 },
+    );
   }
 
   let formData: FormData;
@@ -28,11 +39,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: "Image must be under 5MB" }, { status: 400 });
   }
 
-  if (manager.photoUrl) {
-    // Best-effort cleanup of the previous photo — don't block the upload on it.
-    await del(manager.photoUrl).catch((err) => console.error("Failed to delete old photo blob", err));
-  }
-
   let blobUrl: string;
   try {
     const blob = await put(`managers/${manager.id}/photo-${Date.now()}`, file, {
@@ -45,10 +51,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: "Photo storage isn't configured or the upload failed" }, { status: 500 });
   }
 
-  const updated = await prisma.manager.update({
-    where: { id: manager.id },
-    data: { photoUrl: blobUrl },
+  const photo = await prisma.managerPhoto.create({
+    data: { managerId: manager.id, url: blobUrl },
   });
 
-  return NextResponse.json({ manager: updated });
+  return NextResponse.json({ photo });
 }

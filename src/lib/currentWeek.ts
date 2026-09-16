@@ -19,7 +19,10 @@ export async function getCurrentWeek(leagueId: string): Promise<number | null> {
 export async function getWeekPairs(leagueId: string, week: number) {
   const rows = await prisma.matchup.findMany({
     where: { leagueId, week },
-    include: { manager: true, opponent: true },
+    include: {
+      manager: { include: { photos: true } },
+      opponent: { include: { photos: true } },
+    },
   });
 
   const seen = new Set<string>();
