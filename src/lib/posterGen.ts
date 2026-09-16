@@ -331,7 +331,16 @@ export async function regeneratePoster(
  * /commissioner/settings. Pairings without a poster yet are left alone
  * (same as generateWeeklyPosters/the cron, not this manual action's job).
  */
-export async function regenerateAllCurrentWeekPosters(leagueId: string) {
+export interface RegenerateAllProgress {
+  completed: number;
+  total: number;
+  success: boolean;
+}
+
+export async function regenerateAllCurrentWeekPosters(
+  leagueId: string,
+  onProgress?: (progress: RegenerateAllProgress) => void,
+) {
   const week = await getCurrentWeek(leagueId);
   if (!week) {
     return { week: null, regenerated: 0, failed: 0 };
@@ -345,6 +354,7 @@ export async function regenerateAllCurrentWeekPosters(leagueId: string) {
   let failed = 0;
 
   for (const poster of posters) {
+    let success = true;
     try {
       await regeneratePoster(leagueId, poster.managerAId, poster.managerBId);
       regenerated++;
@@ -354,7 +364,9 @@ export async function regenerateAllCurrentWeekPosters(leagueId: string) {
         err,
       );
       failed++;
+      success = false;
     }
+    onProgress?.({ completed: regenerated + failed, total: posters.length, success });
   }
 
   return { week, regenerated, failed };
