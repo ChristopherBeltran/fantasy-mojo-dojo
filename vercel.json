@@ -5,12 +5,8 @@
       "schedule": "0 9 * * *"
     },
     {
-      "path": "/api/cron/daily-sync",
-      "schedule": "0 14 * * 2"
-    },
-    {
       "path": "/api/cron/last-man-standing",
-      "schedule": "0 14 * * 2"
+      "schedule": "0 9 * * 2"
     }
   ]
 }

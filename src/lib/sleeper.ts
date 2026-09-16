@@ -63,6 +63,23 @@ export function getMatchupsForWeek(leagueId: string, week: number) {
   return sleeperGet<SleeperMatchup[]>(`/league/${leagueId}/matchups/${week}`);
 }
 
+export interface SleeperNflState {
+  week: number; // current NFL week — authoritative, unlike inferring from matchup data
+  season: string;
+  season_type: string; // "regular" | "post" | ...
+}
+
+/**
+ * Sleeper pre-populates matchup pairings for the ENTIRE season as soon as
+ * it's generated — /league/{id}/matchups/{week} returns real rows (just
+ * with points: 0) for weeks that haven't been played yet, so it never comes
+ * back empty. This endpoint is the only reliable way to know which week is
+ * actually current.
+ */
+export function getNflState() {
+  return sleeperGet<SleeperNflState>("/state/nfl");
+}
+
 /**
  * Pairs up Sleeper's flat matchup rows (one per roster) into home/away pairs
  * using the shared matchup_id, and derives points-allowed for each side.
