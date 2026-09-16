@@ -4,6 +4,7 @@ import {
   getUsers,
   getRosters,
   getMatchupsForWeek,
+  getNflState,
   pairMatchups,
   MAX_REGULAR_SEASON_WEEK,
 } from "@/lib/sleeper";
@@ -14,10 +15,11 @@ import {
  * just update existing rows instead of duplicating them.
  */
 export async function syncLeague(sleeperLeagueId: string) {
-  const [sleeperLeague, users, rosters] = await Promise.all([
+  const [sleeperLeague, users, rosters, nflState] = await Promise.all([
     getLeague(sleeperLeagueId),
     getUsers(sleeperLeagueId),
     getRosters(sleeperLeagueId),
+    getNflState(),
   ]);
 
   const league = await prisma.league.upsert({
@@ -69,10 +71,18 @@ export async function syncLeague(sleeperLeagueId: string) {
     (sleeperLeague.settings?.playoff_week_start as number | undefined) ??
     MAX_REGULAR_SEASON_WEEK + 1;
 
+  // Sleeper pre-populates matchup pairings for every week as soon as the
+  // season schedule exists, with points: 0 until that week is actually
+  // played — /league/{id}/matchups/{week} is never empty, even for weeks
+  // far in the future. So we bound the loop to Sleeper's own notion of the
+  // current week (getNflState) rather than relying on an empty response to
+  // stop us, which never happens.
+  const lastWeekToSync = Math.min(MAX_REGULAR_SEASON_WEEK, nflState.week);
+
   let weeksSynced = 0;
-  for (let week = 1; week <= MAX_REGULAR_SEASON_WEEK; week++) {
+  for (let week = 1; week <= lastWeekToSync; week++) {
     const rawMatchups = await getMatchupsForWeek(sleeperLeagueId, week);
-    if (rawMatchups.length === 0) break; // season hasn't reached this week yet
+    if (rawMatchups.length === 0) break; // defense in depth, shouldn't normally trigger
 
     const pairs = pairMatchups(rawMatchups);
     const isPlayoff = week >= playoffWeekStart;

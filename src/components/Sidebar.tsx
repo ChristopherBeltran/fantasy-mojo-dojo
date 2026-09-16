@@ -49,7 +49,15 @@ function LockIcon() {
   );
 }
 
-export function Sidebar({ activeTab }: { activeTab: ActiveTab }) {
+export function Sidebar({
+  activeTab,
+  mobileOpen,
+  onClose,
+}: {
+  activeTab: ActiveTab;
+  mobileOpen: boolean;
+  onClose: () => void;
+}) {
   const [commissionerAuthorized, setCommissionerAuthorized] = useState(false);
 
   useEffect(() => {
@@ -66,45 +74,55 @@ export function Sidebar({ activeTab }: { activeTab: ActiveTab }) {
   }, []);
 
   return (
-    <aside className="w-60 shrink-0 border-r border-border bg-sidebar min-h-[calc(100vh-56px)] px-3 py-4 hidden md:block">
-      <div className="px-2 mb-4">
-        <p className="text-[10px] tracking-widest text-faint font-semibold uppercase mb-2">League</p>
-      </div>
-      <nav className="space-y-0.5">
-        {NAV_ITEMS.map((item) => {
-          const isActive = item.tab === activeTab;
-          const isCommissioner = item.tab === "commissioner";
-          const className = isActive
-            ? "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-semibold bg-cardHover text-slate-100 border-l-2 border-brandTeal -ml-px"
-            : "flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted hover:text-slate-100 hover:bg-cardHover transition-colors";
+    <>
+      {/* Backdrop — mobile only, shown behind the drawer while it's open */}
+      {mobileOpen && (
+        <div className="fixed inset-0 bg-black/60 z-40 md:hidden" onClick={onClose} aria-hidden="true" />
+      )}
+      <aside
+        className={`w-60 shrink-0 border-r border-border bg-sidebar min-h-[calc(100vh-56px)] px-3 py-4 md:block md:static md:z-auto ${
+          mobileOpen ? "fixed inset-y-0 left-0 z-50 block" : "hidden"
+        }`}
+      >
+        <div className="px-2 mb-4">
+          <p className="text-[10px] tracking-widest text-faint font-semibold uppercase mb-2">League</p>
+        </div>
+        <nav className="space-y-0.5">
+          {NAV_ITEMS.map((item) => {
+            const isActive = item.tab === activeTab;
+            const isCommissioner = item.tab === "commissioner";
+            const className = isActive
+              ? "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-semibold bg-cardHover text-slate-100 border-l-2 border-brandTeal -ml-px"
+              : "flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted hover:text-slate-100 hover:bg-cardHover transition-colors";
 
-          const content = (
-            <>
-              <span className={isActive ? "text-brandTeal" : ""}>{ICONS[item.tab]}</span>
-              {item.label}
-              {isCommissioner && !commissionerAuthorized && <LockIcon />}
-            </>
-          );
-
-          // Plain <a> rather than Link: this route is gated by HTTP Basic
-          // Auth in middleware, and only a full browser navigation reliably
-          // triggers the native credentials prompt (Next's client-side
-          // fetch-based routing doesn't).
-          if (isCommissioner) {
-            return (
-              <a key={item.tab} href={item.href} className={className}>
-                {content}
-              </a>
+            const content = (
+              <>
+                <span className={isActive ? "text-brandTeal" : ""}>{ICONS[item.tab]}</span>
+                {item.label}
+                {isCommissioner && !commissionerAuthorized && <LockIcon />}
+              </>
             );
-          }
 
-          return (
-            <Link key={item.tab} href={item.href} className={className}>
-              {content}
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
+            // Plain <a> rather than Link: this route is gated by HTTP Basic
+            // Auth in middleware, and only a full browser navigation reliably
+            // triggers the native credentials prompt (Next's client-side
+            // fetch-based routing doesn't).
+            if (isCommissioner) {
+              return (
+                <a key={item.tab} href={item.href} className={className} onClick={onClose}>
+                  {content}
+                </a>
+              );
+            }
+
+            return (
+              <Link key={item.tab} href={item.href} className={className} onClick={onClose}>
+                {content}
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+    </>
   );
 }
