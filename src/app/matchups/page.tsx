@@ -3,7 +3,10 @@ import { getCurrentLeague } from "@/lib/league";
 import { getCurrentWeek, getWeekPairs } from "@/lib/currentWeek";
 import { prisma } from "@/lib/prisma";
 
-export const revalidate = 300;
+// Rendered per-request rather than statically at build time — Neon's
+// serverless DB auto-suspends when idle, and a build-time prerender can
+// fail if it hits the DB mid-wake.
+export const dynamic = "force-dynamic";
 
 export default async function MatchupsPage() {
   const league = await getCurrentLeague();

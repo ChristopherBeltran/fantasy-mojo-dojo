@@ -1,3 +1,5 @@
+import { RecomputeButton } from "./RecomputeButton";
+
 interface LeaderboardEntry {
   managerId: string;
   displayName: string;
@@ -5,6 +7,7 @@ interface LeaderboardEntry {
 }
 
 interface BonusCardProps {
+  bonusId: string;
   label: string;
   computedAt: string; // ISO date string
   leaderboard: LeaderboardEntry[];
@@ -13,14 +16,22 @@ interface BonusCardProps {
 
 const defaultFormatter = (value: number) => value.toFixed(1);
 
-export function BonusCard({ label, computedAt, leaderboard, valueFormatter = defaultFormatter }: BonusCardProps) {
+export function BonusCard({
+  bonusId,
+  label,
+  computedAt,
+  leaderboard,
+  valueFormatter = defaultFormatter,
+}: BonusCardProps) {
   const computedDate = new Date(computedAt);
 
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <div>
-          <p className="text-[10px] font-semibold tracking-widest text-faint uppercase mb-1">Bonus</p>
+          <p className="text-[10px] font-semibold tracking-widest text-faint uppercase mb-1">
+            Bonus
+          </p>
           <h2 className="font-bold text-lg">{label}</h2>
         </div>
         <span className="px-2.5 py-1 rounded-full border border-brandTeal/30 bg-brandTeal/10 text-brandTeal text-[10px] font-bold uppercase">
@@ -38,10 +49,21 @@ export function BonusCard({ label, computedAt, leaderboard, valueFormatter = def
         </thead>
         <tbody>
           {leaderboard.map((entry, i) => (
-            <tr key={entry.managerId} className={`border-t border-border ${i === 0 ? "bg-brandTeal/5" : ""}`}>
-              <td className={`px-5 py-3 font-bold ${i === 0 ? "text-brandTeal" : "text-muted"}`}>{i + 1}</td>
-              <td className={`px-5 py-3 ${i === 0 ? "font-semibold" : ""}`}>{entry.displayName}</td>
-              <td className={`px-5 py-3 text-right tabular ${i === 0 ? "font-bold text-brandTeal" : "text-slate-300"}`}>
+            <tr
+              key={entry.managerId}
+              className={`border-t border-border ${i === 0 ? "bg-brandTeal/5" : ""}`}
+            >
+              <td
+                className={`px-5 py-3 font-bold ${i === 0 ? "text-brandTeal" : "text-muted"}`}
+              >
+                {i + 1}
+              </td>
+              <td className={`px-5 py-3 ${i === 0 ? "font-semibold" : ""}`}>
+                {entry.displayName}
+              </td>
+              <td
+                className={`px-5 py-3 text-right tabular ${i === 0 ? "font-bold text-brandTeal" : "text-slate-300"}`}
+              >
                 {valueFormatter(entry.value)}
               </td>
             </tr>
@@ -49,8 +71,12 @@ export function BonusCard({ label, computedAt, leaderboard, valueFormatter = def
         </tbody>
       </table>
 
-      <div className="px-5 py-3 border-t border-border text-[11px] text-faint">
-        Last computed {computedDate.toLocaleString()} · Recomputes daily after games are played
+      <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-border text-[11px] text-faint">
+        <span>
+          Last computed {computedDate.toLocaleString()} · Recomputes daily after
+          games are played
+        </span>
+        <RecomputeButton bonusId={bonusId} />
       </div>
     </div>
   );

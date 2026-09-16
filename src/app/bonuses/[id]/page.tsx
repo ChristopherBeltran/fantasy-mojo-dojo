@@ -7,7 +7,11 @@ import { getCurrentLeague } from "@/lib/league";
 
 export const revalidate = 300;
 
-export default async function BonusDetailPage({ params }: { params: { id: string } }) {
+export default async function BonusDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const league = await getCurrentLeague();
 
   const bonus = await prisma.bonus.findUnique({
@@ -26,11 +30,14 @@ export default async function BonusDetailPage({ params }: { params: { id: string
         ← All bonuses
       </Link>
 
-      <h1 className="text-2xl font-extrabold tracking-tight mt-2 mb-1">{bonus.label}</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight mt-2 mb-1">
+        {bonus.label}
+      </h1>
       <p className="text-sm text-muted mb-5">&quot;{bonus.promptText}&quot;</p>
 
       {latest ? (
         <BonusCard
+          bonusId={bonus.id}
           label={bonus.label}
           computedAt={latest.computedAt.toISOString()}
           leaderboard={latest.leaderboard as never}
@@ -38,7 +45,9 @@ export default async function BonusDetailPage({ params }: { params: { id: string
       ) : (
         <div className="bg-card border border-border rounded-xl p-10 text-center">
           <h3 className="font-bold text-lg mb-1.5">Not computed yet</h3>
-          <p className="text-sm text-muted">This bonus hasn&apos;t produced a leaderboard yet.</p>
+          <p className="text-sm text-muted">
+            This bonus hasn&apos;t produced a leaderboard yet.
+          </p>
         </div>
       )}
     </PageShell>

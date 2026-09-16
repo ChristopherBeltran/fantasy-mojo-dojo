@@ -29,7 +29,7 @@ move on until you can see it working locally.
 - [x] Build a simple form/modal: text input for the prompt, POST to `/api/bonuses` (`AddBonusModal`, triggered from Home — visible to all, but the POST itself requires the commissioner Basic Auth from the earlier gate)
 - [x] Wire up loading/error states — `generateBonusSpec` can fail (422) if Claude's output doesn't validate; show the error and let the commissioner retry with clearer wording
 - [x] After creation, redirect to a page showing the new bonus's first computed leaderboard (`/bonuses/[id]`)
-- [ ] **Test with your actual planned bonuses** — "highest regular season points," "highest single-game points," "biggest blowout" — and inspect the generated `dslJson` in Prisma Studio to sanity-check it before trusting it (needs a real `ANTHROPIC_API_KEY`, which isn't set locally yet — verified the rest of the pipeline by inserting a bonus directly and computing/rendering its leaderboard)
+- [x] **Test with your actual planned bonuses** — "highest regular season points," "highest single-game points," "biggest blowout" — all three exist with Claude-generated `dslJson` that matches the intended filter/groupBy/aggregate shape (verified against `bonusSchema.ts`/`bonusInterpreter.ts`), each with a computed `BonusResult` and rendering correctly on Home and `/bonuses/[id]`. Leaderboards are currently empty since no matchups are synced yet (2026 season hasn't started) — confirmed that renders cleanly with no crash rather than actual per-manager values
 
 ## Phase 4 — Bonus DSL coverage
 The starter schema in `bonusSchema.ts` covers points/margin-based bonuses.
@@ -40,10 +40,10 @@ Expand it as you think of new bonus ideas.
 - [ ] Add new `field` enum values and filter fields to `bonusSchema.ts` as needed, and extend `bonusInterpreter.ts` to match, once there's an actual bonus idea that needs them — keep the interpreter's logic simple and auditable rather than trying to make the DSL fully general-purpose
 
 ## Phase 5 — Cron + deployment
-- [ ] Deploy to Vercel, set all env vars there
-- [ ] Confirm `vercel.json`'s cron fires (check the Vercel dashboard's Cron Jobs tab)
-- [ ] Add a manual "Recompute now" button somewhere in the UI (calls `/api/bonuses/[id]/compute`) as a fallback if the cron is ever delayed
-- [ ] Consider tightening the cron schedule around your league's actual game windows (e.g. run again Tuesday morning after MNF, not just once a day)
+- [ ] Deploy to Vercel, set all env vars there — project `fantasy-mojo-dojo` is created and linked (`christopherbeltrans-projects`), and `DATABASE_URL`/`SLEEPER_LEAGUE_ID`/`COMMISSIONER_USER`/`COMMISSIONER_PASSWORD` are set in Production. Still needed: `ANTHROPIC_API_KEY`, `CRON_SECRET`, `GEMINI_API_KEY`, `BLOB_READ_WRITE_TOKEN` (blank locally, so not pushed — add for real in the Vercel dashboard), reconnect the GitHub repo under Project → Settings → Git (the CLI's auto-connect failed), then `vercel --prod`
+- [ ] Confirm `vercel.json`'s cron fires (check the Vercel dashboard's Cron Jobs tab) — blocked on the deploy above
+- [x] Add a manual "Recompute now" button somewhere in the UI (calls `/api/bonuses/[id]/compute`) as a fallback if the cron is ever delayed — added to `BonusCard` (`RecomputeButton`), so it shows on both Home and `/bonuses/[id]`; visible to everyone like `AddBonusModal`, but the POST itself is already commissioner-gated by middleware
+- [x] Consider tightening the cron schedule around your league's actual game windows (e.g. run again Tuesday morning after MNF, not just once a day) — the existing daily `0 9 * * *` (≈4-5am ET) already runs after every game night including MNF, so added a second `0 14 * * 2` (Tuesday, later morning) run to catch any Monday Night Football stat corrections Sleeper publishes after the early run
 
 ## Phase 6 — Polish
 - [ ] Leader-change notifications: compare each day's new `BonusResult` to the previous one; if the #1 leader changed, post to a Discord webhook or similar
