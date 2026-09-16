@@ -3,7 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { PageShell } from "@/components/PageShell";
 import { getCurrentLeague } from "@/lib/league";
 
-export const revalidate = 300;
+// Rendered per-request rather than statically at build time — Neon's
+// serverless DB auto-suspends when idle, and a build-time prerender can
+// fail if it hits the DB mid-wake.
+export const dynamic = "force-dynamic";
 
 interface StandingsRow {
   managerId: string;

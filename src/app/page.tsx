@@ -4,9 +4,11 @@ import { AddBonusModal } from "@/components/AddBonusModal";
 import { PageShell } from "@/components/PageShell";
 import { getCurrentLeague } from "@/lib/league";
 
-// Revalidate periodically so a manual refresh isn't required, but this is
-// still just reading pre-computed rows — no Sleeper/Claude calls on load.
-export const revalidate = 300;
+// Rendered per-request rather than statically at build time — Neon's
+// serverless DB auto-suspends when idle, and a build-time prerender can
+// fail if it hits the DB mid-wake. Still just reading pre-computed rows —
+// no Sleeper/Claude calls on load.
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const league = await getCurrentLeague();
