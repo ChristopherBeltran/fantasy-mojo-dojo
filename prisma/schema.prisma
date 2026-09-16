@@ -33,8 +33,9 @@ model Manager {
   displayName     String
   teamName        String?
   avatarUrl       String?
-  // Commissioner-uploaded reference photo, used to generate weekly matchup posters.
-  photoUrl        String?
+  // Commissioner-uploaded reference photos (up to 3, see the photo upload
+  // route), used to generate weekly matchup posters.
+  photos          ManagerPhoto[]
   // Commissioner-set real-world NFL team, matched against NFL_TEAMS in src/lib/nflTeams.ts.
   favoriteNflTeam String?
   matchupsAsHome  Matchup[] @relation("HomeManager")
@@ -43,6 +44,19 @@ model Manager {
   postersAsB      MatchupPoster[] @relation("PosterManagerB")
 
   @@unique([leagueId, rosterId])
+}
+
+// A single reference photo for a manager. Capped at 3 per manager (enforced
+// in the upload route, not here) — all of a manager's photos are fed to
+// Gemini as reference images when generating that manager's matchup posters.
+model ManagerPhoto {
+  id        String   @id @default(cuid())
+  manager   Manager  @relation(fields: [managerId], references: [id])
+  managerId String
+  url       String
+  createdAt DateTime @default(now())
+
+  @@index([managerId])
 }
 
 // One row per team, per week. This is the table almost every bonus computes over.

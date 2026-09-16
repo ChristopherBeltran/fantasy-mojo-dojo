@@ -14,15 +14,17 @@ export default async function CommissionerManagersPage() {
   const managers = await prisma.manager.findMany({
     where: { leagueId: league.id },
     orderBy: { displayName: "asc" },
+    include: { photos: { orderBy: { createdAt: "asc" } } },
   });
 
   return (
     <PageShell activeTab="commissioner" leagueName={league.name}>
       <h1 className="text-2xl font-extrabold tracking-tight mb-1">Manage league members</h1>
       <p className="text-sm text-muted mb-5">
-        Upload a reference photo per manager — used to generate each week&apos;s
-        matchup posters (a pairing only gets a poster once both managers have
-        one) — and set each manager&apos;s favorite NFL team.
+        Upload up to 3 reference photos per manager — used to generate each
+        week&apos;s matchup posters (a pairing only gets a poster once both
+        managers have at least one) — and set each manager&apos;s favorite
+        NFL team.
       </p>
 
       <div className="bg-card border border-border rounded-xl divide-y divide-border">
@@ -42,7 +44,7 @@ export default async function CommissionerManagersPage() {
                 />
               </div>
             </div>
-            <PhotoUploadForm managerId={m.id} currentPhotoUrl={m.photoUrl} />
+            <PhotoUploadForm managerId={m.id} photos={m.photos} />
           </div>
         ))}
       </div>

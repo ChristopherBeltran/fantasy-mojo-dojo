@@ -8,7 +8,7 @@ const POSTER_PROMPT = (
   teamB: string,
 ) => `Create a fun, stylized sports-poster illustration for a
 fantasy football head-to-head matchup, in a bold graphic-design / cartoon
-illustration style — NOT photorealistic. Use the two reference photos only
+illustration style — NOT photorealistic. Use the reference photos only
 as loose inspiration for each person's general look, rendered as illustrated
 characters rather than literal photo likenesses. Compose it like a "VS"
 showdown poster: dynamic angles, dramatic lighting, team-vs-team energy.
@@ -33,9 +33,9 @@ async function fetchAsBase64(
 
 async function generatePosterImage(
   teamAName: string,
-  teamAPhotoUrl: string,
+  teamAPhotoUrls: string[],
   teamBName: string,
-  teamBPhotoUrl: string,
+  teamBPhotoUrls: string[],
 ): Promise<GeneratedImage> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -43,17 +43,23 @@ async function generatePosterImage(
   }
 
   const ai = new GoogleGenAI({ apiKey });
-  const [photoA, photoB] = await Promise.all([
-    fetchAsBase64(teamAPhotoUrl),
-    fetchAsBase64(teamBPhotoUrl),
+  const [photosA, photosB] = await Promise.all([
+    Promise.all(teamAPhotoUrls.map(fetchAsBase64)),
+    Promise.all(teamBPhotoUrls.map(fetchAsBase64)),
   ]);
 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash-image",
     contents: [
       { text: POSTER_PROMPT(teamAName, teamBName) },
-      { inlineData: { mimeType: photoA.mimeType, data: photoA.data } },
-      { inlineData: { mimeType: photoB.mimeType, data: photoB.data } },
+      { text: `Reference photos of ${teamAName}:` },
+      ...photosA.map((p) => ({
+        inlineData: { mimeType: p.mimeType, data: p.data },
+      })),
+      { text: `Reference photos of ${teamBName}:` },
+      ...photosB.map((p) => ({
+        inlineData: { mimeType: p.mimeType, data: p.data },
+      })),
     ],
   });
 
@@ -101,7 +107,7 @@ export async function generateWeeklyPosters(leagueId: string) {
         ? [pair.manager, pair.opponent!]
         : [pair.opponent!, pair.manager];
 
-    if (!managerA.photoUrl || !managerB.photoUrl) {
+    if (managerA.photos.length === 0 || managerB.photos.length === 0) {
       skipped++;
       continue;
     }
@@ -124,9 +130,9 @@ export async function generateWeeklyPosters(leagueId: string) {
     try {
       const image = await generatePosterImage(
         managerA.teamName ?? managerA.displayName,
-        managerA.photoUrl,
+        managerA.photos.map((p) => p.url),
         managerB.teamName ?? managerB.displayName,
-        managerB.photoUrl,
+        managerB.photos.map((p) => p.url),
       );
 
       const blob = await put(

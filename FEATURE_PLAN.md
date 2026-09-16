@@ -54,16 +54,16 @@ Expand it as you think of new bonus ideas.
 
 ## Phase 7 — AI matchup posters
 Commissioner-only feature: generate a stylized "matchup poster" per head-to-head
-pairing each week, using a reference photo uploaded for each manager.
-- [x] `Manager.photoUrl` + `MatchupPoster` schema (canonical `managerAId < managerBId` pair per league/week)
-- [x] `/commissioner/photos` — commissioner-only page (gated on every method, not just writes) to upload/replace each manager's reference photo
-- [x] `src/lib/posterGen.ts` — calls Gemini 2.5 Flash Image with both reference photos, stylized/cartoon prompt (not photorealistic — more forgiving of imperfect likeness, less content-policy friction than a photoreal composite), uploads the result to Vercel Blob
-- [x] Wired into the daily cron, after sync + bonus recompute — idempotent (skips pairs that already have a poster or are missing a reference photo), which is what makes "run once the new week begins" work: the first cron run after a new week appears is the only one that actually generates anything for it
+pairing each week, using reference photos uploaded for each manager.
+- [x] `ManagerPhoto` (up to 3 per manager, oldest-first) + `MatchupPoster` schema (canonical `managerAId < managerBId` pair per league/week) — originally a single `Manager.photoUrl`, migrated to a one-to-many `ManagerPhoto` table so posters can draw on multiple reference angles per manager
+- [x] `/commissioner/photos` — commissioner-only page (gated on every method, not just writes) to upload/delete each manager's reference photos (capped at 3; upload is rejected once at the cap rather than silently dropping an old one)
+- [x] `src/lib/posterGen.ts` — calls Gemini 2.5 Flash Image with *all* of both managers' reference photos (grouped per-manager with text labels so the model doesn't conflate whose photo is whose), stylized/cartoon prompt (not photorealistic — more forgiving of imperfect likeness, less content-policy friction than a photoreal composite), uploads the result to Vercel Blob
+- [x] Wired into the daily cron, after sync + bonus recompute — idempotent (skips pairs that already have a poster, or where either manager has zero photos), which is what makes "run once the new week begins" work: the first cron run after a new week appears is the only one that actually generates anything for it
 - [x] Posters display above each pairing on `/matchups`
-- [ ] **Set `GEMINI_API_KEY`** (from [Google AI Studio](https://aistudio.google.com/apikey)) **and `BLOB_READ_WRITE_TOKEN`** (create a Blob store in the Vercel dashboard, or `vercel env pull` once one's linked) and smoke-test real generation — the Gemini SDK call is implemented against the installed `@google/genai` package's actual shipped type definitions (verified directly, not just docs), but hasn't been exercised against a live API call yet
-- [ ] Upload reference photos for each manager in `/commissioner/photos` — posters only generate for pairs where both managers have one
+- [x] Set `GEMINI_API_KEY` and `BLOB_READ_WRITE_TOKEN` in Vercel (Production and Preview) — done as part of Phase 5's deploy work
+- [ ] Smoke-test real generation against the live Gemini API — the SDK call is implemented against `@google/genai`'s actual shipped type definitions, but hasn't produced real output yet
+- [ ] Upload reference photos for each manager in `/commissioner/photos` — posters only generate for pairs where both managers have at least one
 - [ ] Once real output comes back, revisit the poster prompt in `posterGen.ts` — wording will likely need iteration to get a style/composition you're happy with
-- [ ] Set both env vars in Vercel too before relying on this in production (fold into Phase 5's env var setup)
 
 ---
 
