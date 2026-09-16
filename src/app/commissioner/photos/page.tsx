@@ -19,6 +19,12 @@ export default async function CommissionerManagersPage() {
 
   return (
     <PageShell activeTab="commissioner" leagueName={league.name}>
+      {/* Plain <a> rather than Link — same reasoning as Sidebar's commissioner
+          entry: only a full browser navigation reliably works with HTTP
+          Basic Auth across the whole /commissioner/* surface. */}
+      <a href="/commissioner/settings" className="text-sm text-muted hover:text-slate-100 inline-block mb-3">
+        ← Back to Commissioner
+      </a>
       <h1 className="text-2xl font-extrabold tracking-tight mb-1">Manage league members</h1>
       <p className="text-sm text-muted mb-5">
         Upload up to 3 reference photos per manager — used to generate each

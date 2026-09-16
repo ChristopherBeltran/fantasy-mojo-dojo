@@ -3,34 +3,26 @@ import { put, del } from "@vercel/blob";
 import type { Manager, ManagerPhoto } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentWeek, getWeekPairs } from "@/lib/currentWeek";
+import { getSetting } from "@/lib/settings";
 
 type ManagerWithPhotos = Manager & { photos: ManagerPhoto[] };
 
-function apparelInstruction(
-  side: "A" | "B",
-  teamName: string,
-  favoriteNflTeam: string | null,
-) {
-  if (!favoriteNflTeam) return "";
-  return ` Dress Team ${side}'s character in apparel (jersey, colors, or
-logo elements) inspired by the ${favoriteNflTeam} — that's ${teamName}'s
-favorite real-world NFL team.`;
-}
+// Editable from /commissioner/settings without a code deploy — see
+// getPosterPromptTemplate. {{placeholders}} are substituted by
+// renderPromptTemplate; teamAApparelInstruction/teamBApparelInstruction are
+// pre-computed (possibly empty) strings, not conditionals the template
+// itself needs to handle.
+export const POSTER_PROMPT_SETTING_KEY = "posterPrompt";
 
-const POSTER_PROMPT = (
-  teamA: string,
-  teamAFavoriteNflTeam: string | null,
-  teamB: string,
-  teamBFavoriteNflTeam: string | null,
-) => `Create a fun, stylized sports-poster illustration for a
+export const DEFAULT_POSTER_PROMPT_TEMPLATE = `Create a fun, stylized sports-poster illustration for a
 fantasy football head-to-head matchup, in a bold graphic-design / cartoon
 illustration style — NOT photorealistic. Use each side's reference photos
 only as loose inspiration for that person's general look, rendered as an
 illustrated character rather than a literal photo likeness. Compose it like
 a "VS" showdown poster: dynamic angles, dramatic lighting, team-vs-team
 energy. Render each fantasy team's name as bold poster-style text on that
-side of the composition "${teamA}" vs. "${teamB}".
-${apparelInstruction("A", teamA, teamAFavoriteNflTeam)}${apparelInstruction("B", teamB, teamBFavoriteNflTeam)}
+side of the composition "{{teamA}}" vs. "{{teamB}}".
+{{teamAApparelInstruction}}{{teamBApparelInstruction}}
 
 IMPORTANT: Team A and Team B are two different real people. Base each
 character ONLY on that side's own reference photos (their own skin tone,
@@ -47,6 +39,26 @@ Matchup", or similar boilerplate. The only text that should appear in the
 image is each side's actual fantasy team name given above (rendered as
 poster-style text), plus whatever real text is naturally part of a
 character's apparel (e.g. a jersey number or NFL team wordmark).`;
+
+export async function getPosterPromptTemplate(): Promise<{ value: string; isDefault: boolean }> {
+  const stored = await getSetting(POSTER_PROMPT_SETTING_KEY);
+  return stored ? { value: stored, isDefault: false } : { value: DEFAULT_POSTER_PROMPT_TEMPLATE, isDefault: true };
+}
+
+function renderPromptTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_match, key) => vars[key] ?? "");
+}
+
+function apparelInstruction(
+  side: "A" | "B",
+  teamName: string,
+  favoriteNflTeam: string | null,
+) {
+  if (!favoriteNflTeam) return "";
+  return ` Dress Team ${side}'s character in apparel (jersey, colors, or
+logo elements) inspired by the ${favoriteNflTeam} — that's ${teamName}'s
+favorite real-world NFL team.`;
+}
 
 interface GeneratedImage {
   bytes: Buffer;
@@ -79,10 +91,18 @@ async function generatePosterImage(
   }
 
   const ai = new GoogleGenAI({ apiKey });
-  const [photosA, photosB] = await Promise.all([
+  const [photosA, photosB, promptTemplate] = await Promise.all([
     Promise.all(teamAPhotoUrls.map(fetchAsBase64)),
     Promise.all(teamBPhotoUrls.map(fetchAsBase64)),
+    getPosterPromptTemplate(),
   ]);
+
+  const promptText = renderPromptTemplate(promptTemplate.value, {
+    teamA: teamAName,
+    teamB: teamBName,
+    teamAApparelInstruction: apparelInstruction("A", teamAName, teamAFavoriteNflTeam),
+    teamBApparelInstruction: apparelInstruction("B", teamBName, teamBFavoriteNflTeam),
+  });
 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash-image",
@@ -92,14 +112,7 @@ async function generatePosterImage(
       imageConfig: { aspectRatio: "3:4" },
     },
     contents: [
-      {
-        text: POSTER_PROMPT(
-          teamAName,
-          teamAFavoriteNflTeam,
-          teamBName,
-          teamBFavoriteNflTeam,
-        ),
-      },
+      { text: promptText },
       {
         text: `--- Team A (${teamAName}) reference photos — base Team A's character ONLY on these ${photosA.length} photos ---`,
       },
@@ -298,4 +311,39 @@ export async function regeneratePoster(
   }
 
   return createPoster(leagueId, week, league.season, managerA, managerB);
+}
+
+/**
+ * Regenerates every current-week pairing that already has a poster — the
+ * "regenerate all" offered after saving a new prompt on
+ * /commissioner/settings. Pairings without a poster yet are left alone
+ * (same as generateWeeklyPosters/the cron, not this manual action's job).
+ */
+export async function regenerateAllCurrentWeekPosters(leagueId: string) {
+  const week = await getCurrentWeek(leagueId);
+  if (!week) {
+    return { week: null, regenerated: 0, failed: 0 };
+  }
+
+  const posters = await prisma.matchupPoster.findMany({
+    where: { leagueId, week },
+  });
+
+  let regenerated = 0;
+  let failed = 0;
+
+  for (const poster of posters) {
+    try {
+      await regeneratePoster(leagueId, poster.managerAId, poster.managerBId);
+      regenerated++;
+    } catch (err) {
+      console.error(
+        `Poster regeneration failed for ${poster.managerAId} vs ${poster.managerBId}, week ${week}`,
+        err,
+      );
+      failed++;
+    }
+  }
+
+  return { week, regenerated, failed };
 }

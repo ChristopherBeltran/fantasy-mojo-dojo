@@ -5,7 +5,7 @@ export const NAV_ITEMS: { tab: ActiveTab; label: string; href: string }[] = [
   { tab: "standings", label: "Standings", href: "/standings" },
   { tab: "matchups", label: "Matchups", href: "/matchups" },
   { tab: "lastManStanding", label: "Last Man Standing", href: "/last-man-standing" },
-  { tab: "commissioner", label: "Commissioner", href: "/commissioner/photos" },
+  { tab: "commissioner", label: "Commissioner", href: "/commissioner/settings" },
 ];
 
 // Labels for the TopNav breadcrumb.

@@ -150,3 +150,13 @@ model LastManStandingElimination {
   @@unique([leagueId, season, week, managerId])
   @@index([leagueId, season])
 }
+
+// Generic admin-tunable key/value store, editable from a commissioner page
+// without a code deploy. First use: "posterPrompt" (see src/lib/posterGen.ts)
+// — no row for a key means "use the hardcoded default", so deleting a row is
+// how a value gets reset to default.
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
