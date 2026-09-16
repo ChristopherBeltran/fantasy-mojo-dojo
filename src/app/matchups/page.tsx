@@ -1,4 +1,5 @@
 import { PageShell } from "@/components/PageShell";
+import { RegeneratePosterButton } from "@/components/RegeneratePosterButton";
 import { getCurrentLeague } from "@/lib/league";
 import { getCurrentWeek, getWeekPairs } from "@/lib/currentWeek";
 import { prisma } from "@/lib/prisma";
@@ -35,13 +36,19 @@ export default async function MatchupsPage() {
             const homeName = m.manager.teamName ?? m.manager.displayName;
             const awayName = m.opponent!.teamName ?? m.opponent!.displayName;
             const homeWinning = m.points > (m.opponentPoints ?? 0);
-            const pairKey = [m.managerId, m.opponentId].sort().join(":");
+            const [managerAId, managerBId] = [m.managerId, m.opponentId!].sort();
+            const pairKey = `${managerAId}:${managerBId}`;
             const poster = posterByPair.get(pairKey);
             return (
               <div key={m.id} className="bg-card border border-border rounded-xl overflow-hidden">
                 {poster && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={poster.imageUrl} alt={`${homeName} vs ${awayName} matchup poster`} className="w-full" />
+                  <div className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={poster.imageUrl} alt={`${homeName} vs ${awayName} matchup poster`} className="w-full" />
+                    <div className="absolute bottom-2 right-2">
+                      <RegeneratePosterButton managerAId={managerAId} managerBId={managerBId} />
+                    </div>
+                  </div>
                 )}
                 <div className="px-5 py-4 flex items-center justify-between gap-4">
                   <div
