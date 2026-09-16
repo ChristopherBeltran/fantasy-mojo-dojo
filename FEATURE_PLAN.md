@@ -63,7 +63,8 @@ pairing each week, using reference photos uploaded for each manager.
 - [x] Set `GEMINI_API_KEY` and `BLOB_READ_WRITE_TOKEN` in Vercel (Production and Preview) — done as part of Phase 5's deploy work
 - [ ] Smoke-test real generation against the live Gemini API — the SDK call is implemented against `@google/genai`'s actual shipped type definitions, but hasn't produced real output yet
 - [ ] Upload reference photos for each manager in `/commissioner/photos` — posters only generate for pairs where both managers have at least one
-- [ ] Once real output comes back, revisit the poster prompt in `posterGen.ts` — wording will likely need iteration to get a style/composition you're happy with
+- [x] First real generation attempt surfaced two issues, both fixed: both characters looked like the same person (added an explicit "these are two different people, don't blend them" instruction), and output came out as a too-tall 974x1863 sliver (set `imageConfig.aspectRatio: "3:4"`) — still not verified against a live call since the Gemini billing/quota issue remains open
+- [x] Commissioner-only "Regenerate poster" button per pairing on `/matchups`, plus a `/commissioner/settings` page to edit the prompt itself (stored in a new generic `Setting` table, no deploy needed to tweak wording) with a "regenerate all this week's posters" follow-up after saving
 
 ## Phase 8 — Last Man Standing
 Elimination pool running weeks 3-14: each week the surviving manager with the

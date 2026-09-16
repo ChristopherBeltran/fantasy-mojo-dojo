@@ -1,6 +1,7 @@
 import { PageShell } from "@/components/PageShell";
 import { PhotoUploadForm } from "@/components/PhotoUploadForm";
 import { FavoriteTeamModal } from "@/components/FavoriteTeamModal";
+import { CommissionerSubNav } from "@/components/CommissionerSubNav";
 import { getCurrentLeague } from "@/lib/league";
 import { prisma } from "@/lib/prisma";
 
@@ -19,6 +20,7 @@ export default async function CommissionerManagersPage() {
 
   return (
     <PageShell activeTab="commissioner" leagueName={league.name}>
+      <CommissionerSubNav active="photos" />
       <h1 className="text-2xl font-extrabold tracking-tight mb-1">Manage league members</h1>
       <p className="text-sm text-muted mb-5">
         Upload up to 3 reference photos per manager — used to generate each

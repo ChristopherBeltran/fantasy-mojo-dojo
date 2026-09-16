@@ -53,6 +53,7 @@ export const config = {
     "/api/managers/:path*",
     "/api/last-man-standing/:path*",
     "/api/posters/:path*",
+    "/api/settings/:path*",
     "/commissioner",
     "/commissioner/:path*",
   ],
