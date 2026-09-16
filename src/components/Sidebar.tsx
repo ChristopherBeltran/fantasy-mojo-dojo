@@ -24,6 +24,7 @@ const ICONS: Record<ActiveTab, React.ReactNode> = {
       <path d="M20 17H4" />
     </svg>
   ),
+  lastManStanding: <span className="text-base leading-none">💪</span>,
   commissioner: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M12 3l7 4v5c0 4.418-3.134 7.86-7 9-3.866-1.14-7-4.582-7-9V7l7-4z" />

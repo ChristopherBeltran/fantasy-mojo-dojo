@@ -19,6 +19,7 @@ model League {
   matchups        Matchup[]
   bonuses         Bonus[]
   posters         MatchupPoster[]
+  lmsEliminations LastManStandingElimination[]
   lastSyncedAt    DateTime?
   createdAt       DateTime   @default(now())
 }
@@ -42,6 +43,7 @@ model Manager {
   matchupsAsAway  Matchup[] @relation("AwayManager")
   postersAsA      MatchupPoster[] @relation("PosterManagerA")
   postersAsB      MatchupPoster[] @relation("PosterManagerB")
+  lmsEliminations LastManStandingElimination[]
 
   @@unique([leagueId, rosterId])
 }
@@ -127,4 +129,24 @@ model MatchupPoster {
 
   @@unique([leagueId, week, managerAId, managerBId])
   @@index([leagueId, week])
+}
+
+// One row per manager eliminated from the "Last Man Standing" pool, per
+// season. Runs weeks 3-14 (see LMS_START_WEEK/LMS_END_WEEK in
+// src/lib/lastManStanding.ts): each week the surviving manager with the
+// lowest score that week is eliminated. A manager with no row here is still
+// alive. The existence of a row for a given week is what makes recomputation
+// idempotent — see computeLastManStanding.
+model LastManStandingElimination {
+  id        String   @id @default(cuid())
+  league    League   @relation(fields: [leagueId], references: [id])
+  leagueId  String
+  season    String
+  week      Int
+  manager   Manager  @relation(fields: [managerId], references: [id])
+  managerId String
+  createdAt DateTime @default(now())
+
+  @@unique([leagueId, season, week, managerId])
+  @@index([leagueId, season])
 }

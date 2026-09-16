@@ -36,6 +36,7 @@ export const config = {
     "/api/bonuses",
     "/api/bonuses/:path*",
     "/api/managers/:path*",
+    "/api/last-man-standing/:path*",
     "/commissioner",
     "/commissioner/:path*",
   ],
