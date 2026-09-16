@@ -65,6 +65,15 @@ pairing each week, using reference photos uploaded for each manager.
 - [ ] Upload reference photos for each manager in `/commissioner/photos` — posters only generate for pairs where both managers have at least one
 - [ ] Once real output comes back, revisit the poster prompt in `posterGen.ts` — wording will likely need iteration to get a style/composition you're happy with
 
+## Phase 8 — Last Man Standing
+Elimination pool running weeks 3-14: each week the surviving manager with the
+lowest score that week is out, until one manager remains.
+- [x] `LastManStandingElimination` schema (one row per elimination, unique per league/season/week/manager) + `src/lib/lastManStanding.ts`'s `computeLastManStanding` — idempotent, catches up every unprocessed week in range so a missed cron doesn't leave a gap; ties for lowest broken by lowest cumulative regular-season points through that week; stops eliminating once one manager remains (winner)
+- [x] `/last-man-standing` page + nav item (💪) — leaderboard table with Sleeper avatar as team logo, Status (Alive/Eliminated) and Eliminated (week) columns, eliminated rows dimmed/struck-through
+- [x] `/api/cron/last-man-standing` — separate weekly cron (`0 14 * * 2`, same Tuesday-morning slot as the daily-sync MNF-correction run; syncs Sleeper itself first rather than assuming ordering with that other cron) + manual `RecomputeButton`-style fallback on the page, commissioner-gated like the rest of `/api/*` writes
+- [ ] **Confirm the 3rd cron entry in `vercel.json` actually deploys** — Vercel's plan tier may cap total cron jobs per project; if this one is rejected, fold the elimination check into the existing daily-sync route instead
+- [ ] Watch the first couple of real weekly runs once the season reaches week 3, to confirm the tiebreak and winner-stop logic behave as expected against real (not smoke-tested) data
+
 ---
 
 ## Open decisions worth making early
