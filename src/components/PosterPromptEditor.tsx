@@ -14,6 +14,7 @@ export function PosterPromptEditor({
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
@@ -77,28 +78,54 @@ export function PosterPromptEditor({
 
   async function handleRegenerateAll() {
     setRegenerating(true);
+    setProgress(null);
     setError(null);
     setStatus(null);
 
     try {
       const res = await fetch("/api/posters/regenerate-all", { method: "POST" });
 
-      if (!res.ok) {
+      if (!res.ok || !res.body) {
         const body = await res.json().catch(() => null);
         setError(body?.error ?? "Regeneration failed — please try again.");
         return;
       }
 
-      const body = await res.json();
-      setStatus(
-        body.week == null
-          ? "No synced week to regenerate posters for."
-          : `Regenerated ${body.regenerated} poster(s) for week ${body.week}${body.failed ? ` (${body.failed} failed)` : ""}.`,
-      );
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const events = buffer.split("\n\n");
+        buffer = events.pop() ?? "";
+
+        for (const event of events) {
+          const line = event.split("\n").find((l) => l.startsWith("data: "));
+          if (!line) continue;
+          const data = JSON.parse(line.slice("data: ".length));
+
+          if (data.type === "progress") {
+            setProgress({ completed: data.completed, total: data.total });
+          } else if (data.type === "done") {
+            setStatus(
+              data.week == null
+                ? "No synced week to regenerate posters for."
+                : `Regenerated ${data.regenerated} poster(s) for week ${data.week}${data.failed ? ` (${data.failed} failed)` : ""}.`,
+            );
+          } else if (data.type === "error") {
+            setError(data.error ?? "Regeneration failed — please try again.");
+          }
+        }
+      }
     } catch {
       setError("Network error — please try again.");
     } finally {
       setRegenerating(false);
+      setProgress(null);
     }
   }
 
@@ -131,6 +158,28 @@ export function PosterPromptEditor({
 
         {error && <p className="text-sm text-red-400 mt-2">{error}</p>}
         {status && <p className="text-sm text-brandTeal mt-2">{status}</p>}
+        {regenerating && (
+          <div className="mt-3">
+            <div className="flex justify-between text-xs text-muted mb-1">
+              <span>Regenerating posters…</span>
+              {progress && (
+                <span>
+                  {progress.completed} / {progress.total}
+                </span>
+              )}
+            </div>
+            <div className="w-full bg-cardHover rounded-full h-1.5 overflow-hidden">
+              <div
+                className="bg-brandTeal h-1.5 rounded-full transition-all duration-300"
+                style={{
+                  width: progress
+                    ? `${Math.min(100, (progress.completed / Math.max(progress.total, 1)) * 100)}%`
+                    : "8%",
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-between items-center mt-4">
           <button

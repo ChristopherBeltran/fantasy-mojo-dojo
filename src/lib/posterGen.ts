@@ -14,38 +14,41 @@ type ManagerWithPhotos = Manager & { photos: ManagerPhoto[] };
 // itself needs to handle.
 export const POSTER_PROMPT_SETTING_KEY = "posterPrompt";
 
-export const DEFAULT_POSTER_PROMPT_TEMPLATE = `Create a fun, stylized sports-poster illustration for a
-fantasy football head-to-head matchup, in a bold graphic-design / cartoon
-illustration style — NOT photorealistic. Use each side's reference photos
-only as loose inspiration for that person's general look, rendered as an
-illustrated character rather than a literal photo likeness. Compose it like
-a "VS" showdown poster: dynamic angles, dramatic lighting, team-vs-team
-energy. Render each fantasy team's name as bold poster-style text on that
-side of the composition "{{teamA}}" vs. "{{teamB}}".
-{{teamAApparelInstruction}}{{teamBApparelInstruction}}
+export const DEFAULT_POSTER_PROMPT_TEMPLATE = `Create a dynamic, split-screen sports showdown poster for a fantasy football matchup in a sharp comic-book / cel-shaded illustration style — NOT photorealistic, and NOT a simple cartoon.
 
-IMPORTANT: Team A and Team B are two different real people. Base each
-character ONLY on that side's own reference photos (their own skin tone,
-build, and features) — do not blend, average, or otherwise let one
-person's appearance influence the other's character. The two characters
-should look like two distinct individuals, not variations of the same
-person.
+COMPOSITION & LAYOUT:
+- Left side of the image features Character A ("{{teamA}}").
+- Right side of the image features Character B ("{{teamB}}").
+- Separate the two sides with a strong central "VS" split-screen line or energy divide.
 
-TEXT RULES: "Team A" and "Team B" above are labels for this prompt only —
-never render the literal words "Team A" or "Team B" anywhere in the image.
-Do not render any generic placeholder or title text either, such as
-"Team A vs Team B", "Fantasy Football Showdown", "Fantasy Football
-Matchup", or similar boilerplate. The only text that should appear in the
-image is each side's actual fantasy team name given above (rendered as
-poster-style text), plus whatever real text is naturally part of a
-character's apparel (e.g. a jersey number or NFL team wordmark).`;
+CHARACTER STYLING & ACCURACY:
+- Character A (Left) MUST be drawn referencing ONLY [IMAGE INPUT SET 1]. Match Person A's exact facial structure, hair style, facial hair, and skin tone.
+- Character B (Right) MUST be drawn referencing ONLY [IMAGE INPUT SET 2]. Match Person B's exact facial structure, hair style, facial hair, and skin tone.
+- CRITICAL: Treat Person A and Person B as two completely different people. Do not mix, smooth, or average their facial characteristics.
 
-export async function getPosterPromptTemplate(): Promise<{ value: string; isDefault: boolean }> {
+APPAREL & CLOTHING:
+{{teamAApparelInstruction}}
+{{teamBApparelInstruction}}
+
+TEXT RULES:
+- Render "{{teamA}}" clearly as stylized graphic poster text on the left.
+- Render "{{teamB}}" clearly as stylized graphic poster text on the right.
+- DO NOT render generic words like "Team A", "Team B", "Matchup", or "Showdown".`;
+
+export async function getPosterPromptTemplate(): Promise<{
+  value: string;
+  isDefault: boolean;
+}> {
   const stored = await getSetting(POSTER_PROMPT_SETTING_KEY);
-  return stored ? { value: stored, isDefault: false } : { value: DEFAULT_POSTER_PROMPT_TEMPLATE, isDefault: true };
+  return stored
+    ? { value: stored, isDefault: false }
+    : { value: DEFAULT_POSTER_PROMPT_TEMPLATE, isDefault: true };
 }
 
-function renderPromptTemplate(template: string, vars: Record<string, string>): string {
+function renderPromptTemplate(
+  template: string,
+  vars: Record<string, string>,
+): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_match, key) => vars[key] ?? "");
 }
 
@@ -55,9 +58,7 @@ function apparelInstruction(
   favoriteNflTeam: string | null,
 ) {
   if (!favoriteNflTeam) return "";
-  return ` Dress Team ${side}'s character in apparel (jersey, colors, or
-logo elements) inspired by the ${favoriteNflTeam} — that's ${teamName}'s
-favorite real-world NFL team.`;
+  return ` For Character ${side} ("${teamName}"), either include subtle streetwear apparel elements like a casual hoodie featuring ${favoriteNflTeam} color accents. DO NOT draw a full football uniform, helmet, or heavy shoulder pads. OR include some element of ${favoriteNflTeam} in the background, such as their mascot, their town, their stadium or a group of their fans.`;
 }
 
 interface GeneratedImage {
@@ -100,31 +101,42 @@ async function generatePosterImage(
   const promptText = renderPromptTemplate(promptTemplate.value, {
     teamA: teamAName,
     teamB: teamBName,
-    teamAApparelInstruction: apparelInstruction("A", teamAName, teamAFavoriteNflTeam),
-    teamBApparelInstruction: apparelInstruction("B", teamBName, teamBFavoriteNflTeam),
+    teamAApparelInstruction: apparelInstruction(
+      "A",
+      teamAName,
+      teamAFavoriteNflTeam,
+    ),
+    teamBApparelInstruction: apparelInstruction(
+      "B",
+      teamBName,
+      teamBFavoriteNflTeam,
+    ),
   });
 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash-image",
     config: {
-      // Default output came out as a near-9:16 sliver (974x1863) — too
-      // tall for a poster. 3:4 matches a standard portrait poster shape.
       imageConfig: { aspectRatio: "3:4" },
     },
     contents: [
-      { text: promptText },
+      // 1. First, explicitly bind Team A's photos
       {
-        text: `--- Team A (${teamAName}) reference photos — base Team A's character ONLY on these ${photosA.length} photos ---`,
+        text: `[IMAGE INPUT SET 1]: These ${photosA.length} photos belong EXCLUSIVELY to Character A ("${teamAName}"). Use these photos ONLY for the left character.`,
       },
       ...photosA.map((p) => ({
         inlineData: { mimeType: p.mimeType, data: p.data },
       })),
+
+      // 2. Explicitly bind Team B's photos
       {
-        text: `--- Team B (${teamBName}) reference photos — base Team B's character ONLY on these ${photosB.length} photos ---`,
+        text: `[IMAGE INPUT SET 2]: These ${photosB.length} photos belong EXCLUSIVELY to Character B ("${teamBName}"). Use these photos ONLY for the right character.`,
       },
       ...photosB.map((p) => ({
         inlineData: { mimeType: p.mimeType, data: p.data },
       })),
+
+      // 3. Main Prompt at the end to act as the synthesis directive
+      { text: promptText },
     ],
   });
 
@@ -319,7 +331,16 @@ export async function regeneratePoster(
  * /commissioner/settings. Pairings without a poster yet are left alone
  * (same as generateWeeklyPosters/the cron, not this manual action's job).
  */
-export async function regenerateAllCurrentWeekPosters(leagueId: string) {
+export interface RegenerateAllProgress {
+  completed: number;
+  total: number;
+  success: boolean;
+}
+
+export async function regenerateAllCurrentWeekPosters(
+  leagueId: string,
+  onProgress?: (progress: RegenerateAllProgress) => void,
+) {
   const week = await getCurrentWeek(leagueId);
   if (!week) {
     return { week: null, regenerated: 0, failed: 0 };
@@ -333,6 +354,7 @@ export async function regenerateAllCurrentWeekPosters(leagueId: string) {
   let failed = 0;
 
   for (const poster of posters) {
+    let success = true;
     try {
       await regeneratePoster(leagueId, poster.managerAId, poster.managerBId);
       regenerated++;
@@ -342,7 +364,9 @@ export async function regenerateAllCurrentWeekPosters(leagueId: string) {
         err,
       );
       failed++;
+      success = false;
     }
+    onProgress?.({ completed: regenerated + failed, total: posters.length, success });
   }
 
   return { week, regenerated, failed };
