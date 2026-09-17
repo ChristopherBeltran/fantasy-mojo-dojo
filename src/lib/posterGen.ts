@@ -22,9 +22,9 @@ COMPOSITION & LAYOUT:
 - Separate the two sides with a strong central "VS" split-screen line or energy divide.
 
 CHARACTER STYLING & ACCURACY:
-- Character A (Left) MUST be drawn referencing ONLY [IMAGE INPUT SET 1]. Match Person A's exact facial structure, hair style, facial hair, and skin tone.
-- Character B (Right) MUST be drawn referencing ONLY [IMAGE INPUT SET 2]. Match Person B's exact facial structure, hair style, facial hair, and skin tone.
-- CRITICAL: Treat Person A and Person B as two completely different people. Do not mix, smooth, or average their facial characteristics.
+- Character A (Left) MUST be drawn referencing ONLY [IMAGE INPUT SET 1]. Study ALL photos in that set together as different views of the SAME person, and identify what makes Person A specifically recognizable — exact head/hair shape, hairline, hair color, facial hair style and coverage, eyebrow shape, skin tone, and build. Exaggerate whichever of these features is most visually distinctive rather than smoothing it into a generic athlete look.
+- Character B (Right) MUST be drawn referencing ONLY [IMAGE INPUT SET 2]. Study ALL photos in that set together as different views of the SAME person, and identify what makes Person B specifically recognizable — exact head/hair shape, hairline, hair color, facial hair style and coverage, eyebrow shape, skin tone, and build. Exaggerate whichever of these features is most visually distinctive rather than smoothing it into a generic athlete look.
+- CRITICAL: Person A and Person B must be visibly, obviously different individuals — different face shapes, different hair, different builds. If you cannot clearly see a feature (e.g. eyes hidden by sunglasses in every photo), still vary hair, head shape, facial hair, and skin tone based on what IS visible rather than defaulting to a generic face. Do not mix, smooth, or average their facial characteristics, and do not let both characters converge toward the same generic look.
 
 APPAREL & CLOTHING:
 {{teamAApparelInstruction}}
@@ -366,7 +366,11 @@ export async function regenerateAllCurrentWeekPosters(
       failed++;
       success = false;
     }
-    onProgress?.({ completed: regenerated + failed, total: posters.length, success });
+    onProgress?.({
+      completed: regenerated + failed,
+      total: posters.length,
+      success,
+    });
   }
 
   return { week, regenerated, failed };
