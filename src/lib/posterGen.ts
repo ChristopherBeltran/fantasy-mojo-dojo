@@ -9,31 +9,43 @@ type ManagerWithPhotos = Manager & { photos: ManagerPhoto[] };
 
 // Editable from /commissioner/settings without a code deploy — see
 // getPosterPromptTemplate. {{placeholders}} are substituted by
-// renderPromptTemplate; teamAApparelInstruction/teamBApparelInstruction are
-// pre-computed (possibly empty) strings, not conditionals the template
-// itself needs to handle.
+// renderPromptTemplate; teamABackgroundInstruction/teamBBackgroundInstruction
+// are pre-computed (possibly empty) strings, not conditionals the template
+// itself needs to handle. This is the COMBINE step's prompt — it receives
+// two already-generated, identity-locked character portraits (see
+// generateCharacterPortrait) and only has to place them in one scene, so it
+// doesn't need the identity-fidelity instructions the portrait prompt has.
 export const POSTER_PROMPT_SETTING_KEY = "posterPrompt";
 
-export const DEFAULT_POSTER_PROMPT_TEMPLATE = `Create a dynamic, split-screen sports showdown poster for a fantasy football matchup in a sharp comic-book / cel-shaded illustration style — NOT photorealistic, and NOT a simple cartoon.
+export const DEFAULT_POSTER_PROMPT_TEMPLATE = `Combine the two provided character illustrations into one dynamic fantasy football matchup poster in a sharp comic-book / cel-shaded illustration style — NOT photorealistic, and NOT a simple cartoon.
 
-COMPOSITION & LAYOUT:
-- Left side of the image features Character A ("{{teamA}}").
-- Right side of the image features Character B ("{{teamB}}").
-- Separate the two sides with a strong central "VS" split-screen line or energy divide.
+CHARACTERS:
+- The first character image is Character A ("{{teamA}}"). The second character image is Character B ("{{teamB}}"). Preserve each character's exact appearance, identity, and clothing from their reference image — do not redesign, blend, or average their features.
+- Compose the scene so Character A and Character B are clearly facing off against each other — for example squaring up, standing back-to-back, or in a dynamic dueling pose — so it is unmistakable that this is a head-to-head matchup between two distinct people. A hard split-screen is not required; any layout is fine as long as the confrontation is obvious.
 
-CHARACTER STYLING & ACCURACY:
-- Character A (Left) MUST be drawn referencing ONLY [IMAGE INPUT SET 1]. Study ALL photos in that set together as different views of the SAME person, and identify what makes Person A specifically recognizable — exact head/hair shape, hairline, hair color, facial hair style and coverage, eyebrow shape, skin tone, and build. Exaggerate whichever of these features is most visually distinctive rather than smoothing it into a generic athlete look.
-- Character B (Right) MUST be drawn referencing ONLY [IMAGE INPUT SET 2]. Study ALL photos in that set together as different views of the SAME person, and identify what makes Person B specifically recognizable — exact head/hair shape, hairline, hair color, facial hair style and coverage, eyebrow shape, skin tone, and build. Exaggerate whichever of these features is most visually distinctive rather than smoothing it into a generic athlete look.
-- CRITICAL: Person A and Person B must be visibly, obviously different individuals — different face shapes, different hair, different builds. If you cannot clearly see a feature (e.g. eyes hidden by sunglasses in every photo), still vary hair, head shape, facial hair, and skin tone based on what IS visible rather than defaulting to a generic face. Do not mix, smooth, or average their facial characteristics, and do not let both characters converge toward the same generic look.
-
-APPAREL & CLOTHING:
-{{teamAApparelInstruction}}
-{{teamBApparelInstruction}}
+BACKGROUND & SCENE:
+- Build one cohesive background/scene (not two separate, disconnected halves) that blends visual elements from both sides below.
+{{teamABackgroundInstruction}}
+{{teamBBackgroundInstruction}}
+- If neither side has a background instruction above, use a generic dynamic fantasy-football stadium/energy backdrop.
 
 TEXT RULES:
-- Render "{{teamA}}" clearly as stylized graphic poster text on the left.
-- Render "{{teamB}}" clearly as stylized graphic poster text on the right.
+- Render "{{teamA}}" and "{{teamB}}" clearly as stylized graphic poster text, positioned so it's obvious which name belongs to which character.
 - DO NOT render generic words like "Team A", "Team B", "Matchup", or "Showdown".`;
+
+// Fixed, not settings-backed — this is the mechanical identity-fidelity
+// step (see generateCharacterPortrait) rather than the creative step a
+// commissioner would want to keep tuning.
+const PORTRAIT_PROMPT_TEMPLATE = `Create a single character illustration in a sharp comic-book / cel-shaded style — NOT photorealistic, and NOT a simple cartoon — of Character ("{{teamName}}"), posed confidently, on a plain neutral studio background (flat, no scenery, no props, no other people) so the character can be cleanly placed into a different scene later.
+
+CHARACTER ACCURACY:
+- Reference ONLY the provided photos, which are different views of the SAME person. Identify what makes them specifically recognizable — exact head/hair shape, hairline, hair color, facial hair style and coverage, eyebrow shape, skin tone, and build. Exaggerate whichever of these features is most visually distinctive rather than smoothing it into a generic athlete look.
+- If you cannot clearly see a feature (e.g. eyes hidden by sunglasses in every photo), still vary hair, head shape, facial hair, and skin tone based on what IS visible rather than defaulting to a generic face.
+
+APPAREL:
+{{apparelInstruction}}
+
+Do not render any text, logos, or graphic overlays in this image.`;
 
 export async function getPosterPromptTemplate(): Promise<{
   value: string;
@@ -53,12 +65,22 @@ function renderPromptTemplate(
 }
 
 function apparelInstruction(
+  teamName: string,
+  favoriteNflTeam: string | null,
+): string {
+  const nflOption = favoriteNflTeam
+    ? ` Their favorite real-world NFL team is ${favoriteNflTeam} — sometimes reflect this with a jersey or apparel using that team's colors, but not every time.`
+    : "";
+  return `Look at what the person is actually wearing across the reference photos and let that inform the outfit — if a clothing style, color, or accessory shows up consistently, carry it into the illustration. Vary the result rather than defaulting to the same look every time: sometimes a full sports jersey, sometimes a plain t-shirt or casual hoodie, sometimes an outfit with no team branding at all.${nflOption} You may instead draw inspiration from their fantasy football team name ("${teamName}") for a themed graphic tee or fun apparel detail when it naturally lends itself to one — this is optional, not required for every character.`;
+}
+
+function backgroundInstruction(
   side: "A" | "B",
   teamName: string,
   favoriteNflTeam: string | null,
-) {
+): string {
   if (!favoriteNflTeam) return "";
-  return ` For Character ${side} ("${teamName}"), either include subtle streetwear apparel elements like a casual hoodie featuring ${favoriteNflTeam} color accents. DO NOT draw a full football uniform, helmet, or heavy shoulder pads. OR include some element of ${favoriteNflTeam} in the background, such as their mascot, their town, their stadium or a group of their fans.`;
+  return `- For the side of the scene associated with Character ${side} ("${teamName}"), let the background/scenery nod to ${favoriteNflTeam} — for example their mascot, stadium, team colors, or fans — blended naturally into the overall scene.`;
 }
 
 interface GeneratedImage {
@@ -78,35 +100,92 @@ async function fetchAsBase64(
   return { data: buffer.toString("base64"), mimeType };
 }
 
-async function generatePosterImage(
-  teamAName: string,
-  teamAFavoriteNflTeam: string | null,
-  teamAPhotoUrls: string[],
-  teamBName: string,
-  teamBFavoriteNflTeam: string | null,
-  teamBPhotoUrls: string[],
-): Promise<GeneratedImage> {
+function getGeminiClient(): GoogleGenAI {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY not set");
   }
+  return new GoogleGenAI({ apiKey });
+}
 
-  const ai = new GoogleGenAI({ apiKey });
-  const [photosA, photosB, promptTemplate] = await Promise.all([
-    Promise.all(teamAPhotoUrls.map(fetchAsBase64)),
-    Promise.all(teamBPhotoUrls.map(fetchAsBase64)),
-    getPosterPromptTemplate(),
-  ]);
+function extractGeneratedImage(response: {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{ inlineData?: { data?: string; mimeType?: string } }>;
+    };
+  }>;
+}): GeneratedImage {
+  const imageData = response.candidates?.[0]?.content?.parts?.find(
+    (part) => part.inlineData,
+  )?.inlineData;
+  if (!imageData?.data) {
+    throw new Error("Gemini response did not include an image");
+  }
+  return {
+    bytes: Buffer.from(imageData.data, "base64"),
+    mimeType: imageData.mimeType ?? "image/png",
+  };
+}
+
+// Generates one manager's character art in isolation, so identity fidelity
+// isn't competing against a second person's photos in the same generation
+// (which was the root cause of posters showing the same manager twice).
+async function generateCharacterPortrait(
+  teamName: string,
+  favoriteNflTeam: string | null,
+  photoUrls: string[],
+): Promise<GeneratedImage> {
+  const ai = getGeminiClient();
+  const photos = await Promise.all(photoUrls.map(fetchAsBase64));
+
+  const promptText = renderPromptTemplate(PORTRAIT_PROMPT_TEMPLATE, {
+    teamName,
+    apparelInstruction: apparelInstruction(teamName, favoriteNflTeam),
+  });
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash-image",
+    config: {
+      imageConfig: { aspectRatio: "3:4" },
+    },
+    contents: [
+      {
+        text: `[REFERENCE PHOTOS]: These ${photos.length} photos are different views of the SAME person, Character ("${teamName}"). Use them to identify this specific person's likeness.`,
+      },
+      ...photos.map((p) => ({
+        inlineData: { mimeType: p.mimeType, data: p.data },
+      })),
+      { text: promptText },
+    ],
+  });
+
+  return extractGeneratedImage(response);
+}
+
+// Composes two already identity-locked character portraits into the final
+// poster. Background/scene theming lives here (not in the portrait step)
+// so both sides' team flavor can be blended into one cohesive scene rather
+// than each portrait separately inventing an unrelated backdrop.
+async function combinePosterImage(
+  teamAName: string,
+  teamAFavoriteNflTeam: string | null,
+  portraitA: GeneratedImage,
+  teamBName: string,
+  teamBFavoriteNflTeam: string | null,
+  portraitB: GeneratedImage,
+): Promise<GeneratedImage> {
+  const ai = getGeminiClient();
+  const promptTemplate = await getPosterPromptTemplate();
 
   const promptText = renderPromptTemplate(promptTemplate.value, {
     teamA: teamAName,
     teamB: teamBName,
-    teamAApparelInstruction: apparelInstruction(
+    teamABackgroundInstruction: backgroundInstruction(
       "A",
       teamAName,
       teamAFavoriteNflTeam,
     ),
-    teamBApparelInstruction: apparelInstruction(
+    teamBBackgroundInstruction: backgroundInstruction(
       "B",
       teamBName,
       teamBFavoriteNflTeam,
@@ -119,38 +198,29 @@ async function generatePosterImage(
       imageConfig: { aspectRatio: "3:4" },
     },
     contents: [
-      // 1. First, explicitly bind Team A's photos
       {
-        text: `[IMAGE INPUT SET 1]: These ${photosA.length} photos belong EXCLUSIVELY to Character A ("${teamAName}"). Use these photos ONLY for the left character.`,
+        text: `[CHARACTER A]: This image is Character A ("${teamAName}"). Preserve their exact appearance and clothing.`,
       },
-      ...photosA.map((p) => ({
-        inlineData: { mimeType: p.mimeType, data: p.data },
-      })),
-
-      // 2. Explicitly bind Team B's photos
       {
-        text: `[IMAGE INPUT SET 2]: These ${photosB.length} photos belong EXCLUSIVELY to Character B ("${teamBName}"). Use these photos ONLY for the right character.`,
+        inlineData: {
+          mimeType: portraitA.mimeType,
+          data: portraitA.bytes.toString("base64"),
+        },
       },
-      ...photosB.map((p) => ({
-        inlineData: { mimeType: p.mimeType, data: p.data },
-      })),
-
-      // 3. Main Prompt at the end to act as the synthesis directive
+      {
+        text: `[CHARACTER B]: This image is Character B ("${teamBName}"). Preserve their exact appearance and clothing.`,
+      },
+      {
+        inlineData: {
+          mimeType: portraitB.mimeType,
+          data: portraitB.bytes.toString("base64"),
+        },
+      },
       { text: promptText },
     ],
   });
 
-  const imageData = response.candidates?.[0]?.content?.parts?.find(
-    (part) => part.inlineData,
-  )?.inlineData;
-  if (!imageData?.data) {
-    throw new Error("Gemini response did not include an image");
-  }
-
-  return {
-    bytes: Buffer.from(imageData.data, "base64"),
-    mimeType: imageData.mimeType ?? "image/png",
-  };
+  return extractGeneratedImage(response);
 }
 
 /**
@@ -166,13 +236,29 @@ async function createPoster(
   managerA: ManagerWithPhotos,
   managerB: ManagerWithPhotos,
 ) {
-  const image = await generatePosterImage(
-    managerA.teamName ?? managerA.displayName,
+  const teamAName = managerA.teamName ?? managerA.displayName;
+  const teamBName = managerB.teamName ?? managerB.displayName;
+
+  const [portraitA, portraitB] = await Promise.all([
+    generateCharacterPortrait(
+      teamAName,
+      managerA.favoriteNflTeam,
+      managerA.photos.map((p) => p.url),
+    ),
+    generateCharacterPortrait(
+      teamBName,
+      managerB.favoriteNflTeam,
+      managerB.photos.map((p) => p.url),
+    ),
+  ]);
+
+  const image = await combinePosterImage(
+    teamAName,
     managerA.favoriteNflTeam,
-    managerA.photos.map((p) => p.url),
-    managerB.teamName ?? managerB.displayName,
+    portraitA,
+    teamBName,
     managerB.favoriteNflTeam,
-    managerB.photos.map((p) => p.url),
+    portraitB,
   );
 
   const blob = await put(
