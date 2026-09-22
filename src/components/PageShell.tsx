@@ -20,7 +20,6 @@ export function PageShell({
     <>
       <TopNav
         leagueName={leagueName}
-        activeTab={activeTab}
         onToggleMobileNav={() => setMobileNavOpen((open) => !open)}
       />
       <div className="flex">
