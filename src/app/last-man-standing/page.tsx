@@ -98,8 +98,8 @@ export default async function LastManStandingPage() {
                   </td>
                   <td className="px-5 py-3">
                     {isEliminated ? (
-                      <span className="inline-flex items-center rounded-full bg-red-500/10 text-red-400 text-[11px] font-semibold px-2 py-0.5">
-                        Eliminated
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 text-red-400 text-[11px] font-semibold px-2 py-0.5">
+                        Eliminated 🪦
                       </span>
                     ) : (
                       <span className="inline-flex items-center rounded-full bg-brandTeal/10 text-brandTeal text-[11px] font-semibold px-2 py-0.5">
