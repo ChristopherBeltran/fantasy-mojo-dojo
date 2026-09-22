@@ -13,7 +13,9 @@ export const LMS_END_WEEK = 14;
  * competition has a winner).
  */
 export async function computeLastManStanding(leagueId: string) {
-  const league = await prisma.league.findUniqueOrThrow({ where: { id: leagueId } });
+  const league = await prisma.league.findUniqueOrThrow({
+    where: { id: leagueId },
+  });
   const currentWeek = await getCurrentWeek(leagueId);
   if (currentWeek == null) {
     return { processedWeeks: [], reason: "No synced matchup data yet" };
@@ -22,7 +24,12 @@ export async function computeLastManStanding(leagueId: string) {
   const allManagers = await prisma.manager.findMany({ where: { leagueId } });
   const processedWeeks: { week: number; eliminatedManagerIds: string[] }[] = [];
 
-  const lastWeekToProcess = Math.min(currentWeek, LMS_END_WEEK);
+  // getCurrentWeek() returns the week that's synced/in-progress, not the
+  // last *completed* one — Sleeper pre-populates the live week's matchups
+  // with points: 0 before it's played (see sleeperSync.ts), so eliminations
+  // must stop one week short of it or the still-in-progress week gets an
+  // elimination based on a zero/partial score.
+  const lastWeekToProcess = Math.min(currentWeek - 1, LMS_END_WEEK);
   for (let week = LMS_START_WEEK; week <= lastWeekToProcess; week++) {
     const existing = await prisma.lastManStandingElimination.findFirst({
       where: { leagueId, season: league.season, week },
@@ -52,7 +59,9 @@ export async function computeLastManStanding(leagueId: string) {
       },
       _sum: { points: true },
     });
-    const cumulativeByManager = new Map(cumulative.map((c) => [c.managerId, c._sum.points ?? 0]));
+    const cumulativeByManager = new Map(
+      cumulative.map((c) => [c.managerId, c._sum.points ?? 0]),
+    );
 
     const thisWeekScores = await prisma.matchup.findMany({
       where: { leagueId, week, managerId: { in: survivors.map((s) => s.id) } },
@@ -66,7 +75,9 @@ export async function computeLastManStanding(leagueId: string) {
     }
 
     const lowestScore = Math.min(...thisWeekScores.map((s) => s.points));
-    const tiedForLowest = thisWeekScores.filter((s) => s.points === lowestScore);
+    const tiedForLowest = thisWeekScores.filter(
+      (s) => s.points === lowestScore,
+    );
 
     let eliminatedManagerId: string;
     if (tiedForLowest.length === 1) {
@@ -74,13 +85,19 @@ export async function computeLastManStanding(leagueId: string) {
     } else {
       eliminatedManagerId = tiedForLowest.reduce((lowest, candidate) => {
         const lowestTotal = cumulativeByManager.get(lowest.managerId) ?? 0;
-        const candidateTotal = cumulativeByManager.get(candidate.managerId) ?? 0;
+        const candidateTotal =
+          cumulativeByManager.get(candidate.managerId) ?? 0;
         return candidateTotal < lowestTotal ? candidate : lowest;
       }).managerId;
     }
 
     await prisma.lastManStandingElimination.create({
-      data: { leagueId, season: league.season, week, managerId: eliminatedManagerId },
+      data: {
+        leagueId,
+        season: league.season,
+        week,
+        managerId: eliminatedManagerId,
+      },
     });
     processedWeeks.push({ week, eliminatedManagerIds: [eliminatedManagerId] });
   }
