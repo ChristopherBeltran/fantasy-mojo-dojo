@@ -62,7 +62,7 @@ export default async function StandingsPage() {
   }
 
   const standings = [...rows.values()].sort((a, b) =>
-    b.wins !== a.wins ? b.wins - a.wins : b.pointsFor - a.pointsFor
+    b.wins !== a.wins ? b.wins - a.wins : b.pointsFor - a.pointsFor,
   );
 
   return (
@@ -72,36 +72,63 @@ export default async function StandingsPage() {
       {standings.length === 0 ? (
         <div className="bg-card border border-border rounded-xl p-10 text-center">
           <h3 className="font-bold text-lg mb-1.5">No games synced yet</h3>
-          <p className="text-sm text-muted">Run a sync once the season has games to see standings here.</p>
+          <p className="text-sm text-muted">
+            Run a sync once the season has games to see standings here.
+          </p>
         </div>
       ) : (
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="bg-card border border-border rounded-xl overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-faint text-[11px] uppercase tracking-wide">
-                <th className="px-5 py-2 font-semibold">Rank</th>
-                <th className="px-5 py-2 font-semibold">Team</th>
-                <th className="px-5 py-2 font-semibold text-right">Record</th>
-                <th className="px-5 py-2 font-semibold text-right">PF</th>
-                <th className="px-5 py-2 font-semibold text-right">PA</th>
+                <th className="px-2 md:px-5 py-2 font-semibold">
+                  <span className="md:hidden">#</span>
+                  <span className="hidden md:inline">Rank</span>
+                </th>
+                <th className="px-2 md:px-5 py-2 font-semibold">Team</th>
+                <th className="px-2 md:px-5 py-2 font-semibold text-right">
+                  Record
+                </th>
+                <th className="px-2 md:px-5 py-2 font-semibold text-right">
+                  PF
+                </th>
+                <th className="px-2 md:px-5 py-2 font-semibold text-right">
+                  PA
+                </th>
               </tr>
             </thead>
             <tbody>
               {standings.map((s, i) => (
-                <tr key={s.managerId} className={`border-t border-border ${i === 0 ? "bg-brandTeal/5" : ""}`}>
-                  <td className={`px-5 py-3 font-bold ${i === 0 ? "text-brandTeal" : "text-muted"}`}>{i + 1}</td>
-                  <td className={`px-5 py-3 ${i === 0 ? "font-semibold" : ""}`}>
-                    <Link href={`/team/${s.managerId}`} className="inline-flex items-center gap-3 hover:underline">
+                <tr
+                  key={s.managerId}
+                  className={`border-t border-border ${i === 0 ? "bg-brandTeal/5" : ""}`}
+                >
+                  <td
+                    className={`px-2 md:px-5 py-3 font-bold ${i === 0 ? "text-brandTeal" : "text-muted"}`}
+                  >
+                    {i + 1}
+                  </td>
+                  <td
+                    className={`px-2 md:px-5 py-3 ${i === 0 ? "font-semibold" : ""}`}
+                  >
+                    <Link
+                      href={`/team/${s.managerId}`}
+                      className="inline-flex items-center gap-2 md:gap-3 hover:underline"
+                    >
                       <TeamAvatar avatarId={s.avatarId} />
                       {s.name}
                     </Link>
                   </td>
-                  <td className="px-5 py-3 text-right tabular text-slate-300">
+                  <td className="px-2 md:px-5 py-3 text-right tabular text-slate-300">
                     {s.wins}-{s.losses}
                     {s.ties ? `-${s.ties}` : ""}
                   </td>
-                  <td className="px-5 py-3 text-right tabular text-slate-300">{s.pointsFor.toFixed(1)}</td>
-                  <td className="px-5 py-3 text-right tabular text-slate-300">{s.pointsAgainst.toFixed(1)}</td>
+                  <td className="px-2 md:px-5 py-3 text-right tabular text-slate-300">
+                    {s.pointsFor.toFixed(1)}
+                  </td>
+                  <td className="px-2 md:px-5 py-3 text-right tabular text-slate-300">
+                    {s.pointsAgainst.toFixed(1)}
+                  </td>
                 </tr>
               ))}
             </tbody>

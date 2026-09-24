@@ -23,8 +23,14 @@ export function PageShell({
         onToggleMobileNav={() => setMobileNavOpen((open) => !open)}
       />
       <div className="flex">
-        <Sidebar activeTab={activeTab} mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
-        <main className="flex-1 max-w-5xl mx-auto w-full p-6 space-y-5">{children}</main>
+        <Sidebar
+          activeTab={activeTab}
+          mobileOpen={mobileNavOpen}
+          onClose={() => setMobileNavOpen(false)}
+        />
+        <main className="flex-1 max-w-5xl mx-auto w-full min-w-0 p-4 md:p-6 space-y-5">
+          {children}
+        </main>
       </div>
     </>
   );

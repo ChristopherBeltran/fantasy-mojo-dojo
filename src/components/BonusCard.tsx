@@ -44,40 +44,48 @@ export function BonusCard({
         </span>
       </div>
 
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left text-faint text-[11px] uppercase tracking-wide">
-            <th className="px-5 py-2 font-semibold">Rank</th>
-            <th className="px-5 py-2 font-semibold">Team</th>
-            <th className="px-5 py-2 font-semibold text-right">Value</th>
-          </tr>
-        </thead>
-        <tbody>
-          {leaderboard.map((entry, i) => (
-            <tr
-              key={entry.managerId}
-              className={`border-t border-border ${i === 0 ? "bg-brandTeal/5" : ""}`}
-            >
-              <td
-                className={`px-5 py-3 font-bold ${i === 0 ? "text-brandTeal" : "text-muted"}`}
-              >
-                {i + 1}
-              </td>
-              <td className={`px-5 py-3 ${i === 0 ? "font-semibold" : ""}`}>
-                <div className="flex items-center gap-3">
-                  <TeamAvatar avatarId={avatarsByManagerId[entry.managerId]} />
-                  {entry.displayName}
-                </div>
-              </td>
-              <td
-                className={`px-5 py-3 text-right tabular ${i === 0 ? "font-bold text-brandTeal" : "text-slate-300"}`}
-              >
-                {valueFormatter(entry.value)}
-              </td>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-faint text-[11px] uppercase tracking-wide">
+              <th className="px-3 md:px-5 py-2 font-semibold">Rank</th>
+              <th className="px-3 md:px-5 py-2 font-semibold">Team</th>
+              <th className="px-3 md:px-5 py-2 font-semibold text-right">
+                Value
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {leaderboard.map((entry, i) => (
+              <tr
+                key={entry.managerId}
+                className={`border-t border-border ${i === 0 ? "bg-brandTeal/5" : ""}`}
+              >
+                <td
+                  className={`px-3 md:px-5 py-3 font-bold ${i === 0 ? "text-brandTeal" : "text-muted"}`}
+                >
+                  {i + 1}
+                </td>
+                <td
+                  className={`px-3 md:px-5 py-3 ${i === 0 ? "font-semibold" : ""}`}
+                >
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <TeamAvatar
+                      avatarId={avatarsByManagerId[entry.managerId]}
+                    />
+                    {entry.displayName}
+                  </div>
+                </td>
+                <td
+                  className={`px-3 md:px-5 py-3 text-right tabular ${i === 0 ? "font-bold text-brandTeal" : "text-slate-300"}`}
+                >
+                  {valueFormatter(entry.value)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-border text-[11px] text-faint">
         <span>

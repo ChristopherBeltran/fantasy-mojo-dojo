@@ -16,7 +16,7 @@ export default async function TeamPage({
   const manager = await prisma.manager.findUnique({
     where: { id: params.managerId },
   });
-  
+
   if (!manager || manager.leagueId !== league.id) {
     notFound();
   }
@@ -36,11 +36,15 @@ export default async function TeamPage({
   const name = manager.teamName ?? manager.displayName;
   const wins = matchups.filter(
     (m) =>
-      isFinal(m.week) && m.opponentPoints != null && m.points > m.opponentPoints,
+      isFinal(m.week) &&
+      m.opponentPoints != null &&
+      m.points > m.opponentPoints,
   ).length;
   const losses = matchups.filter(
     (m) =>
-      isFinal(m.week) && m.opponentPoints != null && m.points < m.opponentPoints,
+      isFinal(m.week) &&
+      m.opponentPoints != null &&
+      m.points < m.opponentPoints,
   ).length;
 
   return (
@@ -60,15 +64,24 @@ export default async function TeamPage({
         )}
       </p>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-faint text-[11px] uppercase tracking-wide">
-              <th className="px-5 py-2 font-semibold">Week</th>
-              <th className="px-5 py-2 font-semibold">Opponent</th>
-              <th className="px-5 py-2 font-semibold text-right">Points</th>
-              <th className="px-5 py-2 font-semibold text-right">Opp Points</th>
-              <th className="px-5 py-2 font-semibold text-right">Result</th>
+              <th className="px-3 md:px-5 py-2 font-semibold">Week</th>
+              <th className="px-3 md:px-5 py-2 font-semibold">Opponent</th>
+              <th className="px-3 md:px-5 py-2 font-semibold text-right">
+                <span className="md:hidden">Pts</span>
+                <span className="hidden md:inline">Points</span>
+              </th>
+              <th className="px-3 md:px-5 py-2 font-semibold text-right">
+                <span className="md:hidden">Opp</span>
+                <span className="hidden md:inline">Opp Points</span>
+              </th>
+              <th className="px-3 md:px-5 py-2 font-semibold text-right">
+                <span className="md:hidden">Res</span>
+                <span className="hidden md:inline">Result</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -78,7 +91,7 @@ export default async function TeamPage({
               const lost = final && m.points < m.opponentPoints!;
               return (
                 <tr key={m.id} className="border-t border-border">
-                  <td className="px-5 py-3 text-slate-300">
+                  <td className="px-3 md:px-5 py-3 text-slate-300">
                     {m.week}
                     {m.isPlayoff && (
                       <span className="ml-1.5 text-[10px] text-brandGold uppercase font-semibold">
@@ -86,29 +99,23 @@ export default async function TeamPage({
                       </span>
                     )}
                   </td>
-                  <td className="px-5 py-3 text-slate-300">
+                  <td className="px-3 md:px-5 py-3 text-slate-300">
                     {m.opponent
                       ? (m.opponent.teamName ?? m.opponent.displayName)
                       : "Bye"}
                   </td>
-                  <td className="px-5 py-3 text-right tabular text-slate-300">
+                  <td className="px-3 md:px-5 py-3 text-right tabular text-slate-300">
                     {m.points.toFixed(1)}
                   </td>
-                  <td className="px-5 py-3 text-right tabular text-slate-300">
+                  <td className="px-3 md:px-5 py-3 text-right tabular text-slate-300">
                     {m.opponentPoints != null
                       ? m.opponentPoints.toFixed(1)
                       : "—"}
                   </td>
                   <td
-                    className={`px-5 py-3 text-right font-bold ${won ? "text-brandTeal" : lost ? "text-slate-400" : "text-muted"}`}
+                    className={`px-3 md:px-5 py-3 text-right font-bold ${won ? "text-brandTeal" : lost ? "text-slate-400" : "text-muted"}`}
                   >
-                    {won
-                      ? "W"
-                      : lost
-                        ? "L"
-                        : final
-                          ? "T"
-                          : "—"}
+                    {won ? "W" : lost ? "L" : final ? "T" : "—"}
                   </td>
                 </tr>
               );
