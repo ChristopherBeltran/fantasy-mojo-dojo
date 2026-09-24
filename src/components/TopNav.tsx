@@ -33,7 +33,7 @@ export function TopNav({
             Fantasy Mojo Dojo
           </span>
         </div>
-        <div className="flex items-center gap-1.5 text-sm text-muted ml-2 min-w-0">
+        <div className="flex items-center gap-1.5 text-sm text-muted min-w-0 ml-auto text-right md:ml-2 md:text-left">
           {/* Wraps rather than truncating — long league names were cut off on phones. */}
           <span className="text-slate-300 font-medium leading-tight break-words">
             {leagueName}
