@@ -7,6 +7,8 @@ import { getSetting } from "@/lib/settings";
 
 type ManagerWithPhotos = Manager & { photos: ManagerPhoto[] };
 
+const IMAGE_MODEL = "gemini-3.1-flash-image";
+
 // Editable from /commissioner/settings without a code deploy — see
 // getPosterPromptTemplate. {{placeholders}} are substituted by
 // renderPromptTemplate; teamABackgroundInstruction/teamBBackgroundInstruction
@@ -146,7 +148,7 @@ async function generateCharacterPortrait(
   });
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-image",
+    model: IMAGE_MODEL,
     config: {
       imageConfig: { aspectRatio: "3:4" },
     },
@@ -258,7 +260,7 @@ async function combinePosterImage(
   });
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-image",
+    model: IMAGE_MODEL,
     config: {
       imageConfig: { aspectRatio: "3:4" },
     },
