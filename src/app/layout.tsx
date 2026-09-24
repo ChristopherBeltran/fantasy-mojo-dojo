@@ -6,7 +6,11 @@ export const metadata: Metadata = {
   description: "Sleeper-synced standings, stats, and AI-tracked bonuses.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body>{children}</body>
