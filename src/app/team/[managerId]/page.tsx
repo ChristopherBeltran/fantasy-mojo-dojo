@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { PageShell } from "@/components/PageShell";
 import { getCurrentLeague } from "@/lib/league";
+import { getCurrentWeek } from "@/lib/currentWeek";
 
 export const revalidate = 300;
 
@@ -20,18 +21,26 @@ export default async function TeamPage({
     notFound();
   }
 
-  const matchups = await prisma.matchup.findMany({
-    where: { managerId: manager.id },
-    include: { opponent: true },
-    orderBy: { week: "asc" },
-  });
+  const [matchups, currentWeek] = await Promise.all([
+    prisma.matchup.findMany({
+      where: { managerId: manager.id },
+      include: { opponent: true },
+      orderBy: { week: "asc" },
+    }),
+    getCurrentWeek(league.id),
+  ]);
+  // The latest synced week is live/unplayed (0-0 until games happen), so it
+  // gets no result and doesn't count toward the record.
+  const isFinal = (week: number) => currentWeek != null && week < currentWeek;
 
   const name = manager.teamName ?? manager.displayName;
   const wins = matchups.filter(
-    (m) => m.opponentPoints != null && m.points > m.opponentPoints,
+    (m) =>
+      isFinal(m.week) && m.opponentPoints != null && m.points > m.opponentPoints,
   ).length;
   const losses = matchups.filter(
-    (m) => m.opponentPoints != null && m.points < m.opponentPoints,
+    (m) =>
+      isFinal(m.week) && m.opponentPoints != null && m.points < m.opponentPoints,
   ).length;
 
   return (
@@ -64,10 +73,9 @@ export default async function TeamPage({
           </thead>
           <tbody>
             {matchups.map((m) => {
-              const won =
-                m.opponentPoints != null && m.points > m.opponentPoints;
-              const lost =
-                m.opponentPoints != null && m.points < m.opponentPoints;
+              const final = isFinal(m.week) && m.opponentPoints != null;
+              const won = final && m.points > m.opponentPoints!;
+              const lost = final && m.points < m.opponentPoints!;
               return (
                 <tr key={m.id} className="border-t border-border">
                   <td className="px-5 py-3 text-slate-300">
@@ -98,7 +106,7 @@ export default async function TeamPage({
                       ? "W"
                       : lost
                         ? "L"
-                        : m.opponentPoints != null
+                        : final
                           ? "T"
                           : "—"}
                   </td>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageShell } from "@/components/PageShell";
 import { getCurrentLeague } from "@/lib/league";
+import { getCurrentWeek } from "@/lib/currentWeek";
 
 // Rendered per-request rather than statically at build time — Neon's
 // serverless DB auto-suspends when idle, and a build-time prerender can
@@ -22,9 +23,17 @@ export default async function StandingsPage() {
   const league = await getCurrentLeague();
 
   // Standings reflect regular season only — playoff results are shown on the
-  // team's own page but don't affect record/points here.
+  // team's own page but don't affect record/points here. The latest synced
+  // week is the live/upcoming one — Sleeper reports it as 0-0 until it's
+  // played (see sleeperSync.ts) — so only weeks before it count, otherwise
+  // every team picks up a phantom tie.
+  const currentWeek = await getCurrentWeek(league.id);
   const matchups = await prisma.matchup.findMany({
-    where: { leagueId: league.id, isPlayoff: false },
+    where: {
+      leagueId: league.id,
+      isPlayoff: false,
+      week: { lt: currentWeek ?? 0 },
+    },
     include: { manager: true },
   });
 
