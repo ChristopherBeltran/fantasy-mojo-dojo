@@ -8,6 +8,7 @@ import { getSetting } from "@/lib/settings";
 type ManagerWithPhotos = Manager & { photos: ManagerPhoto[] };
 
 const IMAGE_MODEL = "gemini-3.1-flash-image";
+const TEXT_MODEL = "gemini-3.8-flash";
 
 // Editable from /commissioner/settings without a code deploy — see
 // getPosterPromptTemplate. {{placeholders}} are substituted by
@@ -190,7 +191,7 @@ async function describeCharacter(
   try {
     const ai = getGeminiClient();
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: TEXT_MODEL,
       contents: [
         {
           inlineData: {
