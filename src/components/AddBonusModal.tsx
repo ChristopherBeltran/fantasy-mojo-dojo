@@ -1,14 +1,33 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
+// Hidden entirely for non-commissioners, same as RegeneratePosterButton —
+// the POST is already commissioner-gated in middleware, but league members
+// shouldn't see a button that only ever fails for them.
 export function AddBonusModal({ leagueId }: { leagueId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [promptText, setPromptText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [commissionerAuthorized, setCommissionerAuthorized] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/commissioner/status")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setCommissionerAuthorized(Boolean(data.authorized));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!commissionerAuthorized) return null;
 
   function close() {
     if (submitting) return;

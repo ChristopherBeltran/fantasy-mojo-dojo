@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 // Manual fallback for the daily cron (see FEATURE_PLAN Phase 5) — visible to
-// everyone like AddBonusModal, but the POST itself requires the commissioner
+// everyone, but the POST itself requires the commissioner
 // Basic Auth already enforced in middleware for /api/bonuses/:path*.
 export function RecomputeButton({ bonusId }: { bonusId: string }) {
   const router = useRouter();
