@@ -1,5 +1,6 @@
 import { PageShell } from "@/components/PageShell";
 import { LmsRecomputeButton } from "@/components/LmsRecomputeButton";
+import { TeamAvatar } from "@/components/TeamAvatar";
 import { getCurrentLeague } from "@/lib/league";
 import { prisma } from "@/lib/prisma";
 import { LMS_START_WEEK, LMS_END_WEEK } from "@/lib/lastManStanding";
@@ -8,10 +9,6 @@ import { LMS_START_WEEK, LMS_END_WEEK } from "@/lib/lastManStanding";
 // serverless DB auto-suspends when idle, and a build-time prerender can
 // fail if it hits the DB mid-wake.
 export const dynamic = "force-dynamic";
-
-function avatarUrl(sleeperAvatarId: string | null) {
-  return sleeperAvatarId ? `https://sleepercdn.com/avatars/${sleeperAvatarId}` : null;
-}
 
 export default async function LastManStandingPage() {
   const league = await getCurrentLeague();
@@ -26,7 +23,9 @@ export default async function LastManStandingPage() {
     }),
   ]);
 
-  const eliminationByManagerId = new Map(eliminations.map((e) => [e.managerId, e.week]));
+  const eliminationByManagerId = new Map(
+    eliminations.map((e) => [e.managerId, e.week]),
+  );
 
   const rows = managers
     .map((m) => ({
@@ -43,12 +42,17 @@ export default async function LastManStandingPage() {
     });
 
   const survivorCount = rows.filter((r) => r.eliminatedWeek == null).length;
-  const winner = survivorCount === 1 ? rows.find((r) => r.eliminatedWeek == null)?.manager : null;
+  const winner =
+    survivorCount === 1
+      ? rows.find((r) => r.eliminatedWeek == null)?.manager
+      : null;
 
   return (
     <PageShell activeTab="lastManStanding" leagueName={league.name}>
       <div className="flex items-start justify-between gap-4 mb-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Last Man Standing</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">
+          Last Man Standing
+        </h1>
         <LmsRecomputeButton />
       </div>
       <p className="text-sm text-muted mb-5">
@@ -62,41 +66,36 @@ export default async function LastManStandingPage() {
         )}
       </p>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-faint text-[11px] uppercase tracking-wide">
-              <th className="px-5 py-2 font-semibold" />
-              <th className="px-5 py-2 font-semibold">Team</th>
-              <th className="px-5 py-2 font-semibold">Status</th>
-              <th className="px-5 py-2 font-semibold text-right">Eliminated</th>
+              <th className="px-3 md:px-5 py-2 font-semibold" />
+              <th className="px-3 md:px-5 py-2 font-semibold">Team</th>
+              <th className="px-3 md:px-5 py-2 font-semibold">Status</th>
+              <th className="px-3 md:px-5 py-2 font-semibold text-right">
+                <span className="md:hidden">Out</span>
+                <span className="hidden md:inline">Eliminated</span>
+              </th>
             </tr>
           </thead>
           <tbody>
             {rows.map(({ manager, eliminatedWeek }) => {
               const isEliminated = eliminatedWeek != null;
-              const logo = avatarUrl(manager.avatarUrl);
               return (
                 <tr
                   key={manager.id}
                   className={`border-t border-border ${isEliminated ? "opacity-50" : ""}`}
                 >
-                  <td className="px-5 py-3">
-                    <div className="w-8 h-8 rounded-full bg-cardHover border border-border overflow-hidden flex items-center justify-center text-faint text-[9px]">
-                      {logo ? (
-                        // Sleeper avatar CDN is a fixed external host, so a plain
-                        // <img> is simpler than configuring next/image remotePatterns.
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={logo} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        "?"
-                      )}
-                    </div>
+                  <td className="px-3 md:px-5 py-3">
+                    <TeamAvatar avatarId={manager.avatarUrl} />
                   </td>
-                  <td className={`px-5 py-3 ${isEliminated ? "line-through" : "font-semibold"}`}>
+                  <td
+                    className={`px-3 md:px-5 py-3 ${isEliminated ? "line-through" : "font-semibold"}`}
+                  >
                     {manager.teamName ?? manager.displayName}
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-3 md:px-5 py-3">
                     {isEliminated ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 text-red-400 text-[11px] font-semibold px-2 py-0.5">
                         Eliminated 🪦
@@ -107,7 +106,7 @@ export default async function LastManStandingPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-5 py-3 text-right tabular text-slate-300">
+                  <td className="px-3 md:px-5 py-3 text-right tabular text-slate-300">
                     {eliminatedWeek ?? "—"}
                   </td>
                 </tr>

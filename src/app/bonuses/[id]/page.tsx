@@ -14,14 +14,23 @@ export default async function BonusDetailPage({
 }) {
   const league = await getCurrentLeague();
 
-  const bonus = await prisma.bonus.findUnique({
-    where: { id: params.id },
-    include: { results: { orderBy: { computedAt: "desc" }, take: 1 } },
-  });
+  const [bonus, managers] = await Promise.all([
+    prisma.bonus.findUnique({
+      where: { id: params.id },
+      include: { results: { orderBy: { computedAt: "desc" }, take: 1 } },
+    }),
+    prisma.manager.findMany({
+      where: { leagueId: league.id },
+      select: { id: true, avatarUrl: true },
+    }),
+  ]);
 
   if (!bonus || bonus.leagueId !== league.id) notFound();
 
   const latest = bonus.results[0];
+  const avatarsByManagerId = Object.fromEntries(
+    managers.map((m) => [m.id, m.avatarUrl]),
+  );
 
   return (
     // No dedicated "Bonuses" nav entry — bonuses live on Home.
@@ -41,6 +50,7 @@ export default async function BonusDetailPage({
           label={bonus.label}
           computedAt={latest.computedAt.toISOString()}
           leaderboard={latest.leaderboard as never}
+          avatarsByManagerId={avatarsByManagerId}
         />
       ) : (
         <div className="bg-card border border-border rounded-xl p-10 text-center">
