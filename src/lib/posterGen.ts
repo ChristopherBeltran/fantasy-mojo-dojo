@@ -76,14 +76,8 @@ function apparelInstruction(
   const fallbackOutfit = favoriteNflTeam
     ? `a ${favoriteNflTeam} football jersey, or a t-shirt in ${favoriteNflTeam} colors`
     : `a solid-color t-shirt or a football-style jersey with no real team branding`;
-  // The photos should inform the *kind* of clothes, not the clothes
-  // themselves — asking for "those specifics" made the model redraw the
-  // exact shirt from a photo, band print and logo included.
   return `Choose the outfit in this order:
-1. EVERYDAY STYLE, NEW GARMENT: Use the reference photos only to learn what KIND of casual clothes this person tends to wear (e.g. button-ups, flannels, polos, graphic tees, caps) and colors they favor. If they show a clear casual style, design a NEW, original garment in that category. Do NOT recreate any specific piece of clothing from the photos.
-   - Make it clearly different from every garment in the photos: change at least two of color, pattern, print, or collar/sleeve details.
-   - NEVER copy any band name, logo, brand mark, slogan, text, or printed graphic from their clothing. If they favor graphic tees, use a plain tee or an original simple graphic you invent.
-   - If a photo shows a patterned shirt (plaid, floral, stripes), use a different pattern or a solid color.
+1. REAL EVERYDAY STYLE: Look at what the person wears across the reference photos. If they show a clear, specific casual style (e.g. a flannel or button-up shirt, a polo, a graphic tee, a baseball cap, a particular color they favor), dress them in that style with those specifics. Match the actual garment type, not just the color.
 2. FALLBACK: If the photos don't show a clear casual style (only formal wear, only close-up face shots, or plain generic clothing), dress them in ${fallbackOutfit}.
 
 NEVER USE:
