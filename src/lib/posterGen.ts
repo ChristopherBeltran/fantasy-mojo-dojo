@@ -13,15 +13,17 @@ type ManagerWithPhotos = Manager & { photos: ManagerPhoto[] };
 // are pre-computed (possibly empty) strings, not conditionals the template
 // itself needs to handle. This is the COMBINE step's prompt — it receives
 // two already-generated, identity-locked character portraits (see
-// generateCharacterPortrait) and only has to place them in one scene, so it
-// doesn't need the identity-fidelity instructions the portrait prompt has.
+// generateCharacterPortrait) and only has to place them in one scene. The
+// anti-blending rules for that step are appended in code (see
+// identityLockInstruction) so a custom template can't drop them.
 export const POSTER_PROMPT_SETTING_KEY = "posterPrompt";
 
 export const DEFAULT_POSTER_PROMPT_TEMPLATE = `Combine the two provided character illustrations into one dynamic fantasy football matchup poster in a sharp comic-book / cel-shaded illustration style — NOT photorealistic, and NOT a simple cartoon.
 
 CHARACTERS:
-- The first character image is Character A ("{{teamA}}"). The second character image is Character B ("{{teamB}}"). Preserve each character's exact appearance, identity, and clothing from their reference image — do not redesign, blend, or average their features.
-- Compose the scene so Character A and Character B are clearly facing off against each other — for example squaring up, standing back-to-back, or in a dynamic dueling pose — so it is unmistakable that this is a head-to-head matchup between two distinct people. A hard split-screen is not required; any layout is fine as long as the confrontation is obvious.
+- The first character image is Character A ("{{teamA}}"). The second character image is Character B ("{{teamB}}"). They are two DIFFERENT people. Preserve each character's exact appearance, identity, and clothing from their own reference image — do not redesign, blend, or average their features, and do not copy any feature from one character onto the other.
+- Place Character A on the LEFT half of the poster and Character B on the RIGHT half, each fully visible with clear space between them — no overlapping, touching, or back-to-back poses. Have them face toward each other (or toward the viewer) so it's unmistakable this is a head-to-head matchup between two distinct people.
+- Give each character their own pose and expression rather than mirroring the same pose on both sides.
 
 BACKGROUND & SCENE:
 - Build one cohesive background/scene (not two separate, disconnected halves) that blends visual elements from both sides below.
@@ -30,7 +32,7 @@ BACKGROUND & SCENE:
 - If neither side has a background instruction above, use a generic dynamic fantasy-football stadium/energy backdrop.
 
 TEXT RULES:
-- Render "{{teamA}}" and "{{teamB}}" clearly as stylized graphic poster text, positioned so it's obvious which name belongs to which character.
+- Render "{{teamA}}" above or near Character A on the left and "{{teamB}}" above or near Character B on the right, as clearly stylized graphic poster text.
 - DO NOT render generic words like "Team A", "Team B", "Matchup", or "Showdown".`;
 
 // Fixed, not settings-backed — this is the mechanical identity-fidelity
@@ -162,6 +164,65 @@ async function generateCharacterPortrait(
   return extractGeneratedImage(response);
 }
 
+// Writes a short, plain-text list of a portrait's distinguishing traits.
+// Handing the combine step these as text — alongside the images — gives the
+// model an explicit checklist of what separates the two people, which is
+// what keeps it from drifting toward one averaged face (e.g. giving both
+// characters the same beard or glasses). Best-effort: a failure here just
+// means the combine step runs on the images alone.
+async function describeCharacter(
+  portrait: GeneratedImage,
+): Promise<string | null> {
+  try {
+    const ai = getGeminiClient();
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        {
+          inlineData: {
+            mimeType: portrait.mimeType,
+            data: portrait.bytes.toString("base64"),
+          },
+        },
+        {
+          text: "List this character's most distinguishing physical traits as one comma-separated line, covering: head/hair (style, length, color, hairline or baldness), facial hair (or clean-shaven), eyewear (or none), skin tone, build, and outfit (garment type and main colors, any number). Be concrete and visual. Output only the line.",
+        },
+      ],
+    });
+    return response.text?.trim() || null;
+  } catch (err) {
+    console.error("Character description failed", err);
+    return null;
+  }
+}
+
+function characterLabel(
+  side: "A" | "B",
+  teamName: string,
+  description: string | null,
+): string {
+  const position = side === "A" ? "LEFT" : "RIGHT";
+  const traits = description ? ` Distinguishing traits: ${description}.` : "";
+  return `[CHARACTER ${side}]: This image is Character ${side} ("${teamName}"), who goes on the ${position} side of the poster. Preserve their exact face, hair, facial hair, eyewear, skin tone, build, and clothing from this image only.${traits}`;
+}
+
+// Appended after the (commissioner-editable) template rather than living in
+// it, so the anti-blending rules still apply if a custom prompt has been
+// saved that doesn't mention them.
+function identityLockInstruction(
+  teamAName: string,
+  descriptionA: string | null,
+  teamBName: string,
+  descriptionB: string | null,
+): string {
+  const traitLines =
+    descriptionA && descriptionB
+      ? `\n- Character A (LEFT, "${teamAName}"): ${descriptionA}\n- Character B (RIGHT, "${teamBName}"): ${descriptionB}\nCheck each character against their own line — no trait from one line may appear on the other character unless it's listed for both.`
+      : "";
+  return `IDENTITY LOCK (highest priority, overrides anything above):
+Character A and Character B are two different real people and must look like two clearly different people in the final poster. Draw Character A only from the Character A image and Character B only from the Character B image. Do not merge, average, or swap their faces, hairstyles, facial hair, eyewear, skin tones, builds, or outfits. Character A is on the LEFT, Character B is on the RIGHT, with space between them.${traitLines}`;
+}
+
 // Composes two already identity-locked character portraits into the final
 // poster. Background/scene theming lives here (not in the portrait step)
 // so both sides' team flavor can be blended into one cohesive scene rather
@@ -175,7 +236,11 @@ async function combinePosterImage(
   portraitB: GeneratedImage,
 ): Promise<GeneratedImage> {
   const ai = getGeminiClient();
-  const promptTemplate = await getPosterPromptTemplate();
+  const [promptTemplate, descriptionA, descriptionB] = await Promise.all([
+    getPosterPromptTemplate(),
+    describeCharacter(portraitA),
+    describeCharacter(portraitB),
+  ]);
 
   const promptText = renderPromptTemplate(promptTemplate.value, {
     teamA: teamAName,
@@ -198,18 +263,14 @@ async function combinePosterImage(
       imageConfig: { aspectRatio: "3:4" },
     },
     contents: [
-      {
-        text: `[CHARACTER A]: This image is Character A ("${teamAName}"). Preserve their exact appearance and clothing.`,
-      },
+      { text: characterLabel("A", teamAName, descriptionA) },
       {
         inlineData: {
           mimeType: portraitA.mimeType,
           data: portraitA.bytes.toString("base64"),
         },
       },
-      {
-        text: `[CHARACTER B]: This image is Character B ("${teamBName}"). Preserve their exact appearance and clothing.`,
-      },
+      { text: characterLabel("B", teamBName, descriptionB) },
       {
         inlineData: {
           mimeType: portraitB.mimeType,
@@ -217,6 +278,14 @@ async function combinePosterImage(
         },
       },
       { text: promptText },
+      {
+        text: identityLockInstruction(
+          teamAName,
+          descriptionA,
+          teamBName,
+          descriptionB,
+        ),
+      },
     ],
   });
 
