@@ -1,5 +1,6 @@
 import { PageShell } from "@/components/PageShell";
 import { LmsRecomputeButton } from "@/components/LmsRecomputeButton";
+import { TeamAvatar } from "@/components/TeamAvatar";
 import { getCurrentLeague } from "@/lib/league";
 import { prisma } from "@/lib/prisma";
 import { LMS_START_WEEK, LMS_END_WEEK } from "@/lib/lastManStanding";
@@ -8,10 +9,6 @@ import { LMS_START_WEEK, LMS_END_WEEK } from "@/lib/lastManStanding";
 // serverless DB auto-suspends when idle, and a build-time prerender can
 // fail if it hits the DB mid-wake.
 export const dynamic = "force-dynamic";
-
-function avatarUrl(sleeperAvatarId: string | null) {
-  return sleeperAvatarId ? `https://sleepercdn.com/avatars/${sleeperAvatarId}` : null;
-}
 
 export default async function LastManStandingPage() {
   const league = await getCurrentLeague();
@@ -75,23 +72,13 @@ export default async function LastManStandingPage() {
           <tbody>
             {rows.map(({ manager, eliminatedWeek }) => {
               const isEliminated = eliminatedWeek != null;
-              const logo = avatarUrl(manager.avatarUrl);
               return (
                 <tr
                   key={manager.id}
                   className={`border-t border-border ${isEliminated ? "opacity-50" : ""}`}
                 >
                   <td className="px-5 py-3">
-                    <div className="w-8 h-8 rounded-full bg-cardHover border border-border overflow-hidden flex items-center justify-center text-faint text-[9px]">
-                      {logo ? (
-                        // Sleeper avatar CDN is a fixed external host, so a plain
-                        // <img> is simpler than configuring next/image remotePatterns.
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={logo} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        "?"
-                      )}
-                    </div>
+                    <TeamAvatar avatarId={manager.avatarUrl} />
                   </td>
                   <td className={`px-5 py-3 ${isEliminated ? "line-through" : "font-semibold"}`}>
                     {manager.teamName ?? manager.displayName}

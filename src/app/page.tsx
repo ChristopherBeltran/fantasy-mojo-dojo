@@ -12,10 +12,19 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const league = await getCurrentLeague();
-  const bonuses = await prisma.bonus.findMany({
-    where: { leagueId: league.id, active: true },
-    include: { results: { orderBy: { computedAt: "desc" }, take: 1 } },
-  });
+  const [bonuses, managers] = await Promise.all([
+    prisma.bonus.findMany({
+      where: { leagueId: league.id, active: true },
+      include: { results: { orderBy: { computedAt: "desc" }, take: 1 } },
+    }),
+    prisma.manager.findMany({
+      where: { leagueId: league.id },
+      select: { id: true, avatarUrl: true },
+    }),
+  ]);
+  const avatarsByManagerId = Object.fromEntries(
+    managers.map((m) => [m.id, m.avatarUrl]),
+  );
 
   return (
     <PageShell activeTab="home" leagueName={league.name}>
@@ -46,6 +55,7 @@ export default async function HomePage() {
             label={bonus.label}
             computedAt={latest.computedAt.toISOString()}
             leaderboard={latest.leaderboard as never}
+            avatarsByManagerId={avatarsByManagerId}
           />
         );
       })}

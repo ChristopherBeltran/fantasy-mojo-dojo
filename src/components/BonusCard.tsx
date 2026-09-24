@@ -1,4 +1,5 @@
 import { RecomputeButton } from "./RecomputeButton";
+import { TeamAvatar } from "./TeamAvatar";
 
 interface LeaderboardEntry {
   managerId: string;
@@ -11,6 +12,9 @@ interface BonusCardProps {
   label: string;
   computedAt: string; // ISO date string
   leaderboard: LeaderboardEntry[];
+  // Manager.id -> Sleeper avatar id. Stored leaderboards only snapshot
+  // managerId/displayName, so avatars are looked up by the caller.
+  avatarsByManagerId?: Record<string, string | null>;
   valueFormatter?: (value: number) => string;
 }
 
@@ -21,6 +25,7 @@ export function BonusCard({
   label,
   computedAt,
   leaderboard,
+  avatarsByManagerId = {},
   valueFormatter = defaultFormatter,
 }: BonusCardProps) {
   const computedDate = new Date(computedAt);
@@ -59,7 +64,10 @@ export function BonusCard({
                 {i + 1}
               </td>
               <td className={`px-5 py-3 ${i === 0 ? "font-semibold" : ""}`}>
-                {entry.displayName}
+                <div className="flex items-center gap-3">
+                  <TeamAvatar avatarId={avatarsByManagerId[entry.managerId]} />
+                  {entry.displayName}
+                </div>
               </td>
               <td
                 className={`px-5 py-3 text-right tabular ${i === 0 ? "font-bold text-brandTeal" : "text-slate-300"}`}

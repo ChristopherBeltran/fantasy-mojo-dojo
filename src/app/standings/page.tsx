@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { PageShell } from "@/components/PageShell";
 import { getCurrentLeague } from "@/lib/league";
 import { getCurrentWeek } from "@/lib/currentWeek";
+import { TeamAvatar } from "@/components/TeamAvatar";
 
 // Rendered per-request rather than statically at build time — Neon's
 // serverless DB auto-suspends when idle, and a build-time prerender can
@@ -12,6 +13,7 @@ export const dynamic = "force-dynamic";
 interface StandingsRow {
   managerId: string;
   name: string;
+  avatarId: string | null;
   wins: number;
   losses: number;
   ties: number;
@@ -42,6 +44,7 @@ export default async function StandingsPage() {
     const row = rows.get(m.managerId) ?? {
       managerId: m.managerId,
       name: m.manager.teamName ?? m.manager.displayName,
+      avatarId: m.manager.avatarUrl,
       wins: 0,
       losses: 0,
       ties: 0,
@@ -88,7 +91,8 @@ export default async function StandingsPage() {
                 <tr key={s.managerId} className={`border-t border-border ${i === 0 ? "bg-brandTeal/5" : ""}`}>
                   <td className={`px-5 py-3 font-bold ${i === 0 ? "text-brandTeal" : "text-muted"}`}>{i + 1}</td>
                   <td className={`px-5 py-3 ${i === 0 ? "font-semibold" : ""}`}>
-                    <Link href={`/team/${s.managerId}`} className="hover:underline">
+                    <Link href={`/team/${s.managerId}`} className="inline-flex items-center gap-3 hover:underline">
+                      <TeamAvatar avatarId={s.avatarId} />
                       {s.name}
                     </Link>
                   </td>
