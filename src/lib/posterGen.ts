@@ -7,6 +7,8 @@ import { getSetting } from "@/lib/settings";
 
 type ManagerWithPhotos = Manager & { photos: ManagerPhoto[] };
 
+const IMAGE_MODEL = "gemini-3.1-flash-image";
+
 // Editable from /commissioner/settings without a code deploy — see
 // getPosterPromptTemplate. {{placeholders}} are substituted by
 // renderPromptTemplate; teamABackgroundInstruction/teamBBackgroundInstruction
@@ -70,10 +72,19 @@ function apparelInstruction(
   teamName: string,
   favoriteNflTeam: string | null,
 ): string {
-  const nflOption = favoriteNflTeam
-    ? ` Their favorite real-world NFL team is ${favoriteNflTeam} — sometimes reflect this with a jersey or apparel using that team's colors, but not every time.`
-    : "";
-  return `Look at what the person is actually wearing across the reference photos and let that inform the outfit — if a clothing style, color, or accessory shows up consistently, carry it into the illustration. Vary the result rather than defaulting to the same look every time: sometimes a full sports jersey, sometimes a plain t-shirt or casual hoodie, sometimes an outfit with no team branding at all.${nflOption} You may instead draw inspiration from their fantasy football team name ("${teamName}") for a themed graphic tee or fun apparel detail when it naturally lends itself to one — this is optional, not required for every character.`;
+  const fallbackOutfit = favoriteNflTeam
+    ? `a ${favoriteNflTeam} football jersey, or a t-shirt in ${favoriteNflTeam} colors`
+    : `a solid-color t-shirt or a football-style jersey with no real team branding`;
+  return `Choose the outfit in this order:
+1. REAL EVERYDAY STYLE: Look at what the person wears across the reference photos. If they show a clear, specific casual style (e.g. a flannel or button-up shirt, a polo, a graphic tee, a baseball cap, a particular color they favor), dress them in that style with those specifics. Match the actual garment type, not just the color.
+2. FALLBACK: If the photos don't show a clear casual style (only formal wear, only close-up face shots, or plain generic clothing), dress them in ${fallbackOutfit}.
+
+NEVER USE:
+- Formal or occasion wear: suits, blazers, sport coats, ties, bow ties, tuxedos, vests, dress shirts buttoned up with a jacket, or wedding/event attire. Do this even if every reference photo shows it. Ignore that clothing entirely and use the fallback.
+- Work uniforms, scrubs, costumes, or swimwear from the photos.
+- Hoodies or hooded sweatshirts, unless the person is clearly wearing one in the reference photos. Never use a hoodie as a generic default.
+
+Optionally, you may add a small nod to their fantasy team name ("${teamName}") as a graphic on a t-shirt or jersey. Only do this when the name naturally lends itself to one, and don't add it every time.`;
 }
 
 function backgroundInstruction(
@@ -146,7 +157,7 @@ async function generateCharacterPortrait(
   });
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-image",
+    model: IMAGE_MODEL,
     config: {
       imageConfig: { aspectRatio: "3:4" },
     },
@@ -258,7 +269,7 @@ async function combinePosterImage(
   });
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-image",
+    model: IMAGE_MODEL,
     config: {
       imageConfig: { aspectRatio: "3:4" },
     },
