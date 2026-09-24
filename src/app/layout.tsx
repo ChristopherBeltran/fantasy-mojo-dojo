@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "🏈 Fantasy Mojo Dojo",
+  title: "Fantasy Mojo Dojo",
   description: "Sleeper-synced standings, stats, and AI-tracked bonuses.",
 };
 
