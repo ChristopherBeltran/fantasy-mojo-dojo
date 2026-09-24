@@ -93,7 +93,10 @@ function backgroundInstruction(
   favoriteNflTeam: string | null,
 ): string {
   if (!favoriteNflTeam) return "";
-  return `- For the side of the scene associated with Character ${side} ("${teamName}"), let the background/scenery nod to ${favoriteNflTeam} — for example their mascot, stadium, team colors, or fans — blended naturally into the overall scene.`;
+  // Left unconstrained, the model tends to scatter the team logo all over
+  // its side of the scene (walls, fans, floating badges). Keeping the nod
+  // mostly to color and atmosphere, with at most one logo, keeps it subtle.
+  return `- For the side of the scene associated with Character ${side} ("${teamName}"), give the background a subtle nod to ${favoriteNflTeam}, mainly through team colors, lighting, and atmosphere (optionally their stadium or fans). Keep it understated: show the ${favoriteNflTeam} logo at most ONCE on this side, small and in the background, or not at all. Do not repeat the logo, mascot, or team wordmark across walls, signs, banners, fans, or floating badges.`;
 }
 
 interface GeneratedImage {
